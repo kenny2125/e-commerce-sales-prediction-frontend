@@ -17,6 +17,7 @@ interface CheckoutDialogProps {
   pickupMethod: string;
   orderNumber: string;
   total: number;
+  purpose?: string; // new attribute for order purpose
 }
 
 const CheckoutDialog = ({
@@ -27,6 +28,7 @@ const CheckoutDialog = ({
   pickupMethod,
   orderNumber,
   total,
+  purpose, // destructure new prop
 }: CheckoutDialogProps) => {
   const navigate = useNavigate();
 
@@ -44,10 +46,6 @@ const CheckoutDialog = ({
     switch (method) {
       case 'cod':
         return 'Cash on Delivery';
-      case 'gcash':
-        return 'GCash';
-      case 'paymaya':
-        return 'PayMaya';
       default:
         return method;
     }
@@ -55,8 +53,6 @@ const CheckoutDialog = ({
 
   const formatPickupMethod = (method: string) => {
     switch (method) {
-      case 'store':
-        return 'Store Pickup';
       case 'delivery':
         return 'Delivery';
       default:
@@ -100,6 +96,9 @@ const CheckoutDialog = ({
                 
                 <span className="font-medium">Total Amount:</span>
                 <span>₱{total.toLocaleString()}</span>
+
+                <span className="font-medium">Purpose:</span>
+                <span>{purpose || 'N/A'}</span>
               </div>
             </div>
             

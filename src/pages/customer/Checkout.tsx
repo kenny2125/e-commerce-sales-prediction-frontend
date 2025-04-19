@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { QuantityInput } from "@/components/ui/quantity-input";
+import { Input } from "@/components/ui/input";
 import CheckoutDialog from "../../components/dialogs/CheckoutDialog";
 
 interface CartItem {
@@ -53,7 +54,8 @@ const Checkout = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<string>("cod");
-  const [pickupMethod, setPickupMethod] = useState<string>("");
+  const [pickupMethod, setPickupMethod] = useState<string>("delivery"); // Set default to 'delivery'
+  const [purpose, setPurpose] = useState<string>("");
 
   // If not logged in, redirect to home
   if (!currentUser) {
@@ -129,6 +131,7 @@ const Checkout = () => {
         total_amount: getTotal(),
         payment_method: paymentMethod,
         pickup_method: pickupMethod,
+        purpose, // new attribute for order purpose
         items: cartItems.map(item => ({
           product_id: item.product_id,
           quantity: item.quantity,
@@ -256,11 +259,18 @@ const Checkout = () => {
                   <SelectValue placeholder="Select a Pickup Method" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="store">Store Pickup</SelectItem>
                   <SelectItem value="delivery">Delivery</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="flex flex-col gap-2 mt-4">
+            <Label>Purpose</Label>
+            <Input
+              placeholder="Enter order purpose"
+              value={purpose}
+              onChange={e => setPurpose(e.target.value)}
+            />
           </div>
           <div className="flex flex-col md:flex-row gap-4 md:gap-8 justify-between">
             <div className="flex flex-row gap-4">
@@ -310,6 +320,7 @@ const Checkout = () => {
         pickupMethod={pickupMethod}
         orderNumber={new Date().getTime().toString().slice(-8)}
         total={getTotal()}
+        purpose={purpose}
       />
     </div>
   );
