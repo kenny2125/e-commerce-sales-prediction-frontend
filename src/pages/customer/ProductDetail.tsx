@@ -63,26 +63,16 @@ function ProductDetail() {
     fetchProduct();
   }, [searchParams]);
 
-  // Check if this product is already in user's cart
+  // Check if this product is already in user's cart (via localStorage)
   useEffect(() => {
     if (!currentUser || currentUser.role === 'admin' || !product) return;
-    const checkCart = async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (!response.ok) throw new Error('Failed to fetch cart');
-        const items = await response.json();
-        const exists = items.some((item: any) => item.product_id === product.product_id);
-        setIsInCart(exists);
-      } catch (err) {
-        console.error('Error checking cart in ProductDetail:', err);
-      }
-    };
-    checkCart();
+    const stored = localStorage.getItem('cartItems');
+    const items = stored ? JSON.parse(stored) : [];
+    const exists = items.some((item: any) => item.product_id === product.product_id);
+    setIsInCart(exists);
   }, [currentUser, product]);
 
-  const handleAddToCart = useCallback(async () => {
+  const handleAddToCart = useCallback(() => {
     if (!currentUser) {
       setLoginDialogOpen(true);
       return;
@@ -90,48 +80,22 @@ function ProductDetail() {
 
     if (!product) return;
 
-    try {
-      setIsLoading(true);
-
-      if (isInCart) {
-        // Remove from cart
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/remove/${product.product_id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) throw new Error('Failed to remove from cart');
-        
-        toast.success("Item removed from cart");
-        setIsInCart(false);
-      } else {
-        // Add to cart
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/add`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            product_id: product.product_id,
-            quantity: quantity
-          })
-        });
-
-        if (!response.ok) throw new Error('Failed to add to cart');
-        
-        toast.success("Item added to cart");
-        setIsInCart(true);
-      }
-    } catch (error) {
-      console.error('Cart operation failed:', error);
-      toast.error("Failed to update cart. Please try again.");
-    } finally {
-      setIsLoading(false);
+    // Update cartItems in localStorage
+    setIsLoading(true);
+    const stored = localStorage.getItem('cartItems');
+    const items = stored ? JSON.parse(stored) : [];
+    if (isInCart) {
+      const updated = items.filter((item: any) => item.product_id !== product.product_id);
+      localStorage.setItem('cartItems', JSON.stringify(updated));
+      toast.success("Item removed from cart");
+      setIsInCart(false);
+    } else {
+      const updated = [...items, { product_id: product.product_id, quantity }];
+      localStorage.setItem('cartItems', JSON.stringify(updated));
+      toast.success("Item added to cart");
+      setIsInCart(true);
     }
+    setIsLoading(false);
   }, [currentUser, isInCart, product, quantity]);
 
   if (loading) {

@@ -14,6 +14,7 @@ interface ProductCardProps {
     product_name: string;
     store_price: number;
     brand: string;
+    quantity: number;  // stock level
   }
 }
 
@@ -103,34 +104,35 @@ function ProductCard({ product }: ProductCardProps) {
         </div>
       </CardContent>
       <CardFooter className="px-4 pb-4 pt-0">
-        <Button 
-          variant={isInCart ? "destructive" : "default"} 
-          size="sm" 
-          onClick={handleActionClick}
-          disabled={isLoading}
-          className="w-full flex items-center justify-center gap-2"
-        >
-          {currentUser?.role === 'admin' ? (
-            <>
-              <Eye size={16} />
-              <span>View Details</span>
-            </>
-          ) : (
-            <>
-              {isInCart ? (
-                <>
-                  <Trash2 size={16} />
-                  <span>Remove from Cart</span>
-                </>
-              ) : (
-                <>
-                  <ShoppingCart size={16} />
-                  <span>Add to Cart</span>
-                </>
-              )}
-            </>
-          )}
-        </Button>
+        {currentUser?.role === 'admin' ? (
+          <Button 
+            variant="default"
+            size="sm"
+            onClick={handleActionClick}
+            className="w-full flex items-center justify-center gap-2"
+          >
+            <Eye size={16} />
+            <span>View Details</span>
+          </Button>
+        ) : product.quantity === 0 ? (
+          <Button variant="outline" size="sm" disabled className="w-full">
+            Out of Stock
+          </Button>
+        ) : (
+          <Button 
+            variant={isInCart ? "destructive" : "default"} 
+            size="sm" 
+            onClick={handleActionClick}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-2"
+          >
+            {isInCart ? (
+              <><Trash2 size={16} /><span>Remove from Cart</span></>
+            ) : (
+              <><ShoppingCart size={16} /><span>Add to Cart</span></>
+            )}
+          </Button>
+        )}
       </CardFooter>
     </Card>
   )

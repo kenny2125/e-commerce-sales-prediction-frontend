@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ScrollText, Loader2 } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
@@ -48,6 +49,7 @@ export function OrderDialog() {
   const [loading, setLoading] = useState(false);
   const { currentUser } = useUser();
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const fetchOrders = async () => {
     try {
@@ -109,7 +111,13 @@ export function OrderDialog() {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (open) navigate('/');
+        setIsOpen(open);
+      }}
+    >
       <DialogTrigger asChild>
         <ScrollText size={40} className="text-primary cursor-pointer" />
       </DialogTrigger>

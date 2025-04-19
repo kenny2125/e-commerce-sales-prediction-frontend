@@ -33,7 +33,7 @@ const CheckoutDialog = ({
   const handleContinue = () => {
     if (isSuccessful) {
       // Navigate to orders page
-      navigate('/customer/orders');
+      navigate('/orders');
     } else {
       // Close dialog and stay on checkout page
       onOpenChange(false);

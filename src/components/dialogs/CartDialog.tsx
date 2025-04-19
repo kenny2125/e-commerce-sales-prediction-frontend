@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import {
@@ -23,13 +23,16 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { QuantityInput } from "@/components/ui/quantity-input";
 
+// Use API to fetch up‑to‑date product info
+const API_URL = import.meta.env.VITE_API_URL;
+
 interface CartItem {
-  id: number;
   product_id: string;
   product_name: string;
   quantity: number;
   store_price: number;
   image_url: string | null;
+  stock: number;
 }
 
 export function CartDialog() {
@@ -40,7 +43,7 @@ export function CartDialog() {
   const [loading, setLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  const API_URL = import.meta.env.VITE_API_URL;
+  // Using localStorage for cart persistence
 
   useEffect(() => {
     const handleResize = () => {
@@ -59,41 +62,32 @@ export function CartDialog() {
   }, [open]);
 
   const fetchCartItems = async () => {
+    setLoading(true);
+    // Read stored product IDs and quantities
+    const stored = localStorage.getItem('cartItems');
+    const localItems: Array<{ product_id: string; quantity: number }> = stored ? JSON.parse(stored) : [];
+    if (localItems.length === 0) {
+      setCartItems([]);
+      setLoading(false);
+      return;
+    }
+    // Fetch up-to-date product details
     try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        navigate('/unauthorized');
-        setOpen(false);
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/api/cart`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await fetch(`${API_URL}/api/cart/details`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productIds: localItems.map(i => i.product_id) })
       });
-      
-      if (response.ok) {
-        const data = await response.json();
-        // Ensure data is always an array
-        if (Array.isArray(data)) {
-          setCartItems(data);
-        } else {
-          console.error('Received non-array data from cart API:', data);
-          setCartItems([]);
-        }
-      } else if (response.status === 401) {
-        localStorage.removeItem('token');
-        navigate('/unauthorized');
-        setOpen(false);
-      } else {
-        console.error('Failed to fetch cart items:', response.status);
-        setCartItems([]);
-      }
-    } catch (error) {
-      console.error('Error fetching cart:', error);
+      if (!response.ok) throw new Error('Failed to fetch product details');
+      const details: Array<{ product_id: string; product_name: string; store_price: number; image_url: string | null; stock: number }> = await response.json();
+      // Merge stored quantities with details
+      const merged: CartItem[] = details.map(d => {
+        const local = localItems.find(i => i.product_id === d.product_id)!;
+        return { ...d, quantity: Math.min(local.quantity, d.stock) };
+      });
+      setCartItems(merged);
+    } catch (err) {
+      console.error('Error loading cart items:', err);
       setCartItems([]);
     } finally {
       setLoading(false);
@@ -123,73 +117,27 @@ export function CartDialog() {
     });
   };
 
-  const handleQuantityChange = async (productId: string, newQuantity: number) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/unauthorized');
-        setOpen(false);
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/api/cart/update/${productId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ quantity: newQuantity })
-      });
-
-      if (response.ok) {
-        // Update local state immediately
-        setCartItems(prev => 
-          prev.map(item => 
-            item.product_id === productId 
-              ? { ...item, quantity: newQuantity }
-              : item
-          )
-        );
-      } else if (response.status === 401) {
-        // Token expired or invalid
-        localStorage.removeItem('token');
-        navigate('/unauthorized');
-        setOpen(false);
-      }
-    } catch (error) {
-      console.error('Error updating quantity:', error);
-    }
+  const handleQuantityChange = (productId: string, newQuantity: number) => {
+    // clamp to stock
+    const updated = cartItems.map(item =>
+      item.product_id === productId
+        ? { ...item, quantity: Math.min(newQuantity, item.stock) }
+        : item
+    );
+    setCartItems(updated);
+    // Update localStorage stored quantities
+    const storedArr = JSON.parse(localStorage.getItem('cartItems') || '[]');
+    const synced = storedArr.map((i: any) =>
+      i.product_id === productId ? { ...i, quantity: Math.min(newQuantity, updated.find(u => u.product_id === productId)!.stock) } : i
+    );
+    localStorage.setItem('cartItems', JSON.stringify(synced));
   };
 
-  const handleRemoveItem = async (productId: string) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/unauthorized');
-        setOpen(false);
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/api/cart/remove/${productId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        // Remove item from local state
-        setCartItems(prev => prev.filter(item => item.product_id !== productId));
-        setSelectedItems(prev => prev.filter(id => id !== productId));
-      } else if (response.status === 401) {
-        // Token expired or invalid
-        localStorage.removeItem('token');
-        navigate('/unauthorized');
-        setOpen(false);
-      }
-    } catch (error) {
-      console.error('Error removing item:', error);
-    }
+  const handleRemoveItem = (productId: string) => {
+    const updated = cartItems.filter(item => item.product_id !== productId);
+    setCartItems(updated);
+    setSelectedItems(prev => prev.filter(id => id !== productId));
+    localStorage.setItem('cartItems', JSON.stringify(updated));
   };
 
   const getTotal = () => {
@@ -241,24 +189,29 @@ export function CartDialog() {
                   </TableHeader>
                   <TableBody>
                     {cartItems.map((item) => (
-                      <TableRow key={item.product_id} className="align-middle">
+                      <TableRow
+                        key={item.product_id}
+                        className="align-middle cursor-pointer"
+                        onClick={() => toggleItemSelection(item.product_id)}
+                      >
                         <TableCell>
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleRemoveItem(item.product_id)}
+                            onClick={(e) => { e.stopPropagation(); handleRemoveItem(item.product_id); }}
                             className="h-8 w-8 p-0"
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </TableCell>
-                        <TableCell 
-                          className="vertical-align-middle cursor-pointer" 
+                        <TableCell
+                          className="align-middle hover:cursor-pointer"
                           onClick={() => toggleItemSelection(item.product_id)}
                         >
-                          <Checkbox 
+                          <Checkbox
                             checked={selectedItems.includes(item.product_id)}
                             onCheckedChange={() => toggleItemSelection(item.product_id)}
+                            className="cursor-pointer"
                           />
                         </TableCell>
                         <TableCell>
@@ -273,13 +226,13 @@ export function CartDialog() {
                             {item.product_name}
                           </span>
                         </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center gap-2">
+                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-2" onClick={(e: React.MouseEvent<HTMLElement>) => e.stopPropagation()}>
                             <QuantityInput 
-                              value={item.quantity} 
+                              value={item.quantity}
                               onChange={(newValue) => handleQuantityChange(item.product_id, newValue)}
                               min={1}
-                              max={99}
+                              max={item.stock}
                             />
                           </div>
                         </TableCell>
@@ -303,9 +256,10 @@ export function CartDialog() {
               {/* Mobile View */}
               <div className="md:hidden space-y-3 overflow-y-auto max-h-[60vh]">
                 {cartItems.map((item) => (
-                  <div 
-                    key={item.product_id} 
-                    className="relative bg-card rounded-lg shadow p-4 border flex flex-col gap-3"
+                  <div
+                    key={item.product_id}
+                    className="relative bg-card rounded-lg shadow p-4 border flex flex-col gap-3 cursor-pointer"
+                    onClick={() => toggleItemSelection(item.product_id)}
                   >
                     <div className="flex items-start gap-3">
                       <Checkbox 
@@ -325,7 +279,7 @@ export function CartDialog() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleRemoveItem(item.product_id)}
+                          onClick={(e) => { e.stopPropagation(); handleRemoveItem(item.product_id); }}
                           className="h-6 w-6 p-0 self-end"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -333,14 +287,17 @@ export function CartDialog() {
                       </div>
                     </div>
 
-                    <div className="flex items-center px-2 py-1 bg-muted/30 rounded">
+                    <div
+                      className="flex items-center px-2 py-1 bg-muted/30 rounded"
+                      onClick={(e: React.MouseEvent<HTMLElement>) => e.stopPropagation()}
+                    >
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">Quantity:</span>
                         <QuantityInput 
                           value={item.quantity} 
                           onChange={(newValue) => handleQuantityChange(item.product_id, newValue)}
                           min={1}
-                          max={99}
+                          max={item.stock}
                         />
                       </div>
                     </div>
