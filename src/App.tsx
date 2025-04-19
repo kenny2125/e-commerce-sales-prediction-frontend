@@ -18,7 +18,7 @@ import Terms_Conditions from "./pages/footer/Terms_Conditions";
 import PrivacyPolicy from "./pages/footer/PrivacyPolicy";
 import PurchasingGuide from "./pages/footer/PurchasingGuide";
 import Dashboard from "./pages/admin/Dashboard";
-import Inventory from "./pages/admin/Inventory";
+import {Inventory} from "./pages/admin/Inventory";
 import Orders from "./pages/admin/Orders";
 import Sales from "./pages/admin/Sales";
 import UserManagement from "./pages/admin/UserManagement";

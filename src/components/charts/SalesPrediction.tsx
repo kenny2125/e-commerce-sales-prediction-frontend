@@ -54,6 +54,8 @@ interface ValidationMetrics {
     month_name: string;
     actual_sales: number;
     predicted_sales: number;
+    difference?: number;         // Add these properties to store the calculated values
+    percentage_error?: number;   // so they don't need to be calculated during rendering
   }>;
 }
 
@@ -170,6 +172,17 @@ export function SalesPrediction() {
             break;
             
           case 'validation':
+            // Process the validation data and add calculated fields for difference and percentage error
+            if (data.details && Array.isArray(data.details)) {
+              data.details.forEach(detail => {
+                // Calculate and add difference and percentage error to each detail item
+                detail.difference = detail.actual_sales - detail.predicted_sales;
+                detail.percentage_error = detail.actual_sales !== 0 
+                  ? (Math.abs(detail.difference) / detail.actual_sales) * 100 
+                  : 0;
+              });
+            }
+            
             setValidationMetrics({
               mse: data.mse,
               mape: data.mape,
