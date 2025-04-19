@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ScrollText, Loader2 } from "lucide-react";
+import { ScrollText, Loader2, XCircle } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { toast } from "sonner";
 import {
@@ -47,6 +47,7 @@ interface Order {
 export function OrderDialog() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
   const { currentUser } = useUser();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
@@ -56,23 +57,34 @@ export function OrderDialog() {
       setLoading(true);
       const token = localStorage.getItem('token');
       if (!token) {
-        throw new Error('No authentication token found');
+        setOrders([]);
+        return;
+      }
+      if (!currentUser?.id) {
+        setOrders([]);
+        return;
       }
 
-      // Use the new checkout endpoint for fetching user orders
-      const endpoint = currentUser?.role === 'admin' 
+      const endpoint = currentUser?.role === 'admin'
         ? `${import.meta.env.VITE_API_URL}/api/orders`
         : `${import.meta.env.VITE_API_URL}/api/checkout/by-user/${currentUser?.id}`;
 
       const response = await fetch(endpoint, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         }
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch orders');
+        if (response.status === 401 || response.status === 403) {
+          toast.error("Authentication error. Please log in again.");
+        } else {
+          throw new Error('Failed to fetch orders');
+        }
+        setOrders([]);
+        return;
       }
 
       const data = await response.json();
@@ -80,6 +92,7 @@ export function OrderDialog() {
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast.error('Failed to fetch orders');
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -88,8 +101,45 @@ export function OrderDialog() {
   useEffect(() => {
     if (isOpen && currentUser) {
       fetchOrders();
+    } else if (!currentUser) {
+      setOrders([]);
     }
   }, [isOpen, currentUser]);
+
+  const handleCancelOrder = async (orderId: string) => {
+    setCancellingOrderId(orderId);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error("Authentication required to cancel order.");
+      setCancellingOrderId(null);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${orderId}/cancel`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        const errorMessage = responseData?.message || `Failed to cancel order (Status: ${response.status})`;
+        throw new Error(errorMessage);
+      }
+
+      toast.success(`Order ${orderId} cancelled successfully.`);
+      fetchOrders();
+    } catch (error: any) {
+      console.error('Error cancelling order:', error);
+      toast.error(`Cancellation failed: ${error.message}`);
+    } finally {
+      setCancellingOrderId(null);
+    }
+  };
 
   const calculateTotal = () => {
     return orders.reduce((total, order) => total + order.totalAmount, 0);
@@ -114,7 +164,6 @@ export function OrderDialog() {
     <Dialog
       open={isOpen}
       onOpenChange={(open) => {
-        if (open) navigate('/');
         setIsOpen(open);
       }}
     >
@@ -122,7 +171,7 @@ export function OrderDialog() {
         <ScrollText size={40} className="text-primary cursor-pointer" />
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[867px]">
+      <DialogContent className="sm:max-w-7xl">
         <DialogHeader>
           <div className="flex flex-row align-middle items-center gap-2">
             <ScrollText size={40} className="text-primary" />
@@ -147,46 +196,71 @@ export function OrderDialog() {
                 <TableHead>Pickup Status</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     No orders found
                   </TableCell>
                 </TableRow>
               ) : (
-                orders.map((order) => (
-                  <TableRow key={order.orderID}>
-                    <TableCell className="font-medium">{order.orderID}</TableCell>
-                    <TableCell>{order.purchasedProduct}</TableCell>
-                    <TableCell>
-                      <span className={`capitalize ${
-                        order.paymentStatus === 'Paid' ? 'text-green-600' :
-                        order.paymentStatus === 'Processing' ? 'text-yellow-600' :
-                        order.paymentStatus === 'Cancelled' ? 'text-red-600' :
-                        'text-gray-600'
-                      }`}>
-                        {order.paymentStatus}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className={`capitalize ${
-                        order.pickupStatus === 'Claimed' ? 'text-green-600' :
-                        order.pickupStatus === 'Ready to Claim' ? 'text-yellow-600' :
-                        order.pickupStatus === 'Cancelled' ? 'text-red-600' :
-                        'text-gray-600'
-                      }`}>
-                        {order.pickupStatus}
-                      </span>
-                    </TableCell>
-                    <TableCell>{formatDate(order.orderDate)}</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(order.totalAmount)}
-                    </TableCell>
-                  </TableRow>
-                ))
+                orders.map((order) => {
+                  const canCancel = order.paymentStatus !== 'Cancelled' && order.paymentStatus !== 'Claimed' && order.pickupStatus !== 'Claimed';
+                  const isCancelling = cancellingOrderId === order.orderID;
+
+                  return (
+                    <TableRow key={order.orderID}>
+                      <TableCell className="font-medium">{order.orderID}</TableCell>
+                      <TableCell className="truncate max-w-xs">{order.purchasedProduct}</TableCell>
+                      <TableCell>
+                        <span className={`capitalize ${
+                          order.paymentStatus === 'Paid' ? 'text-green-600' :
+                          order.paymentStatus === 'Processing' ? 'text-yellow-600' :
+                          order.paymentStatus === 'Cancelled' ? 'text-red-600' :
+                          'text-gray-600'
+                        }`}>
+                          {order.paymentStatus}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`capitalize ${
+                          order.pickupStatus === 'Claimed' ? 'text-green-600' :
+                          order.pickupStatus === 'Ready to Claim' ? 'text-yellow-600' :
+                          order.pickupStatus === 'Cancelled' ? 'text-red-600' :
+                          'text-gray-600'
+                        }`}>
+                          {order.pickupStatus}
+                        </span>
+                      </TableCell>
+                      <TableCell>{formatDate(order.orderDate)}</TableCell>
+                      <TableCell className="text-right">
+                        {formatCurrency(order.totalAmount)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {canCancel ? (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleCancelOrder(order.orderID)}
+                            disabled={isCancelling}
+                          >
+                            {isCancelling ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <XCircle className="mr-2 h-4 w-4" />
+                            )}
+                            Cancel
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-gray-500 italic">N/A</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
             {orders.length > 0 && (
@@ -196,6 +270,7 @@ export function OrderDialog() {
                   <TableCell className="text-right">
                     {formatCurrency(calculateTotal())}
                   </TableCell>
+                  <TableCell></TableCell>
                 </TableRow>
               </TableFooter>
             )}
