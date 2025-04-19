@@ -15,7 +15,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Loader2 } from "lucide-react"
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Loader2, ClipboardList } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { ScrollText } from "lucide-react"
@@ -56,6 +56,14 @@ export function Orders() {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
+  const [stats, setStats] = React.useState<{ totalOrders: number; processingOrders: number; paidOrders: number; totalRevenue: number } | null>(null)
+  const [statsLoading, setStatsLoading] = React.useState(true)
+  const [statsError, setStatsError] = React.useState<string | null>(null)
+
+  const formatCurrency = (value?: number | null) => {
+    if (value == null) return 'PHP 0.00'
+    return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value)
+  }
 
   // Fetch orders
   React.useEffect(() => {
@@ -95,6 +103,28 @@ export function Orders() {
     }
 
     fetchOrders()
+  }, [])
+
+  // Fetch analytics stats
+  React.useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) throw new Error('No authentication token')
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/stats`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        })
+        if (!res.ok) throw new Error('Failed to fetch stats')
+        const data = await res.json()
+        setStats(data)
+      } catch (err) {
+        console.error(err)
+        setStatsError('Failed to fetch analytics')
+      } finally {
+        setStatsLoading(false)
+      }
+    }
+    fetchStats()
   }, [])
 
   const columns: ColumnDef<Orders>[] = [
@@ -303,13 +333,18 @@ export function Orders() {
   }
 
   return (
-    <div className="w-full">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-4 gap-4">
-        <div className="flex items-center gap-2">
-          <ScrollText size="40px" />
-          <h2 className="text-2xl font-bold">Orders</h2>
+    <div className="w-full space-y-6">
+      {/* Page header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <ClipboardList className="text-primary" size="40px" />
+          <div>
+            <h1 className="text-2xl font-bold whitespace-nowrap">Orders</h1>
+            <p className="text-sm text-muted-foreground">View and manage customer orders.</p>
+          </div>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+        <Button>Add Order</Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full sm:w-auto">
@@ -344,6 +379,32 @@ export function Orders() {
             }
             className="w-full sm:w-[300px]"
           />
+          
+        </div>
+      </div>
+
+      {/* Analytics insights */}
+      {statsError && (
+        <div className="p-4 mb-4 rounded-md bg-yellow-100 text-yellow-700">
+          {statsError}
+        </div>
+      )}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
+          <p className="text-sm text-muted-foreground">Total Orders</p>
+          <p className="text-2xl font-bold">{statsLoading ? '...' : stats?.totalOrders ?? '0'}</p>
+        </div>
+        <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
+          <p className="text-sm text-muted-foreground">Processing Orders</p>
+          <p className="text-2xl font-bold">{statsLoading ? '...' : stats?.processingOrders ?? '0'}</p>
+        </div>
+        <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
+          <p className="text-sm text-muted-foreground">Paid Orders</p>
+          <p className="text-2xl font-bold">{statsLoading ? '...' : stats?.paidOrders ?? '0'}</p>
+        </div>
+        <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
+          <p className="text-sm text-muted-foreground">Total Revenue</p>
+          <p className="text-2xl font-bold">{statsLoading ? '...' : formatCurrency(stats?.totalRevenue)}</p>
         </div>
       </div>
 

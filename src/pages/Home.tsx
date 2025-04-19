@@ -60,7 +60,7 @@ function Home() {
           <h1 className="text-5xl md:text-7xl font-bold mb-2">1618</h1>
           <h2 className="text-3xl md:text-5xl font-bold mb-4">Office Solutions Inc.</h2>
           <p className="text-xl md:text-2xl mb-8">Everything you need for a better workspace.</p>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg" onClick={() => window.location.href = "/shop"}>
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg" onClick={() => window.location.href = "/search"}>
             Shop now
           </Button>
         </div>
