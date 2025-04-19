@@ -206,20 +206,16 @@ export default function Header() {
 
           {/* Navigation Links - Center */}
           <div className="hidden lg:flex items-center justify-center gap-12 flex-1">
-            {navigationLinks.map((link) =>
-              link.to === "/orders" ? (
-                <OrderDialog key="order-dialog" />
-              ) : (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className="flex items-center gap-2 hover:text-primary transition-colors"
-                >
-                  {link.icon}
-                  <span>{link.text}</span>
-                </Link>
-              )
-            )}
+            {navigationLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="flex items-center gap-2 hover:text-primary transition-colors"
+              >
+                {link.icon}
+                <span>{link.text}</span>
+              </Link>
+            ))}
           </div>
 
           {/* User Controls - Right */}
