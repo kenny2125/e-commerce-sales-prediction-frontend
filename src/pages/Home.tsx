@@ -24,17 +24,19 @@ function Home() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/product`);
-        if (!response.ok) throw new Error('Failed to fetch products');
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/product`
+        );
+        if (!response.ok) throw new Error("Failed to fetch products");
         const data = await response.json();
-        
+
         // Take first 8 products for featured products section
-        setFeaturedProducts(data.slice(0, 8));
-        
+        setFeaturedProducts(data.slice(0, 30));
+
         // Take next 8 products for best sellers section
         setProducts(data.slice(8, 16));
       } catch (error) {
-        console.error('Error fetching products:', error);
+        console.error("Error fetching products:", error);
       } finally {
         setLoading(false);
       }
@@ -47,20 +49,26 @@ function Home() {
     <main className="pb-12">
       <Helmet>
         <title>Home - 1618 Office Solutions</title>
-      </Helmet>    
+      </Helmet>
 
       {/* Hero Section */}
       <section className="relative h-[400px] flex items-center justify-center bg-gray-100 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-gray-800/70 to-gray-800/50 z-10"></div>
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/src/assets/office-supplies-bg.jpg')" }}
+          style={{
+            backgroundImage: "url('/src/assets/office-supplies-bg.jpg')",
+          }}
         ></div>
         <div className="relative z-20 text-center text-white px-4">
           <h1 className="text-5xl md:text-7xl font-bold mb-2">1618</h1>
-          <h2 className="text-3xl md:text-5xl font-bold mb-4">Office Solutions Inc.</h2>
-          <p className="text-xl md:text-2xl mb-8">Everything you need for a better workspace.</p>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg" onClick={() => window.location.href = "/search"}>
+          <h2 className="text-3xl md:text-5xl font-bold mb-4">
+            Office Solutions Inc.
+          </h2>
+          <p className="text-xl md:text-2xl mb-8">
+            Everything you need for a better workspace.
+          </p>
+          <Button onClick={() => (window.location.href = "/search")}>
             Shop now
           </Button>
         </div>
@@ -69,7 +77,9 @@ function Home() {
       {/* Office Essentials Banner */}
       <section className="py-10 text-center">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-2">Office Essentials, All in One Place.</h2>
+          <h2 className="text-3xl font-bold mb-2">
+            Office Essentials, All in One Place.
+          </h2>
         </div>
       </section>
 
@@ -78,36 +88,38 @@ function Home() {
         {/* Office Supplies Category */}
         <div className="mb-12">
           <div className="relative h-[300px] overflow-hidden">
-            <img 
-              src="/src/assets/office-supplies-category.jpg" 
-              alt="Office & School Supplies" 
+            <img
+              src="/src/assets/office-supplies-category.jpg"
+              alt="Office & School Supplies"
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-black/40 flex items-center p-8">
-              <h2 className="text-4xl font-bold text-white">Office & School Supplies</h2>
+              <h2 className="text-4xl font-bold text-white">
+                Office & School Supplies
+              </h2>
             </div>
           </div>
         </div>
-        
+
         {/* Furniture and Technology Categories (side by side on larger screens) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Furniture Category */}
           <div className="relative h-[250px] overflow-hidden">
-            <img 
-              src="/src/assets/furniture-category.jpg" 
-              alt="Furniture" 
+            <img
+              src="/src/assets/furniture-category.jpg"
+              alt="Furniture"
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-black/40 flex items-center p-8">
               <h2 className="text-4xl font-bold text-white">Furniture</h2>
             </div>
           </div>
-          
+
           {/* Technology Category */}
           <div className="relative h-[250px] overflow-hidden">
-            <img 
-              src="/src/assets/technology-category.jpg" 
-              alt="Technology" 
+            <img
+              src="/src/assets/technology-category.jpg"
+              alt="Technology"
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-black/40 flex items-center p-8">
@@ -120,55 +132,35 @@ function Home() {
       {/* New & Featured Products Section */}
       <section className="container mx-auto px-4 mb-16">
         <h2 className="text-3xl font-bold mb-8">New & Featured Products</h2>
-        
+
         {loading ? (
           <div className="flex items-center justify-center w-full py-8">
-            Loading products...
+        Loading products...
           </div>
         ) : featuredProducts.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.product_id} product={product} />
-            ))}
-          </div>
+          <>
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          {featuredProducts.map((product) => (
+            <ProductCard key={product.product_id} product={product} />
+          ))}
+        </div>
+        <div className="flex justify-center mt-8">
+          <Button
+            onClick={() => (window.location.href = "/search")}
+            className="flex items-center"
+          >
+            See More
+            <CircleArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+          </>
         ) : (
           <div className="flex items-center justify-center w-full py-8">
-            No products available
+        No products available
           </div>
         )}
       </section>
 
-      {/* Best Sellers Section */}
-      <section className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold mb-8">Best Sellers</h2>
-        
-        {loading ? (
-          <div className="flex items-center justify-center w-full py-8">
-            Loading products...
-          </div>
-        ) : products.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {products.map((product) => (
-              <ProductCard key={product.product_id} product={product} />
-            ))}
-          </div>
-        ) : (
-          <div className="flex items-center justify-center w-full py-8">
-            No products available
-          </div>
-        )}
-        
-        <div className="flex justify-center mt-10">
-          <Button
-            className="text-lg p-4"
-            onClick={() => {
-              window.location.href = "/search";
-            }}
-          >
-            See More Products <CircleArrowRight className="ml-2" />
-          </Button>
-        </div>
-      </section>
     </main>
   );
 }

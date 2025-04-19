@@ -33,7 +33,7 @@ const CheckoutDialog = ({
   const handleContinue = () => {
     if (isSuccessful) {
       // Navigate to orders page
-      navigate('/orders');
+      navigate('/');
     } else {
       // Close dialog and stay on checkout page
       onOpenChange(false);
@@ -115,7 +115,7 @@ const CheckoutDialog = ({
 
         <div className="flex justify-end mt-4">
           <Button onClick={handleContinue}>
-            {isSuccessful ? 'View Orders' : 'Try Again'}
+            {isSuccessful ? 'Back to Home' : 'Try Again'}
           </Button>
         </div>
       </DialogContent>
