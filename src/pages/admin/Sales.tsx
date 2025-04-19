@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -14,6 +15,14 @@ import { BarChartView } from "@/components/charts/BarChart";
 import { SalesPrediction } from "@/components/charts/SalesPrediction";
 import { SalesRecordsTable } from "@/components/admin/SalesRecordsTable";
 
+// Interface for KPI data structure
+interface KpiData {
+  totalRevenue: number;
+  totalOrders: number;
+  averageOrderValue: number;
+  newCustomers: number;
+}
+
 // Placeholder KPI Card Component (can be moved to a separate file later)
 const KpiCard = ({ title, value, icon: Icon, description }: { title: string; value: string; icon: React.ElementType; description?: string }) => (
   <Card>
@@ -29,6 +38,45 @@ const KpiCard = ({ title, value, icon: Icon, description }: { title: string; val
 );
 
 export default function Sales() {
+  const [kpiData, setKpiData] = useState<KpiData | null>(null);
+  const [kpiLoading, setKpiLoading] = useState(true);
+  const [kpiError, setKpiError] = useState<string | null>(null);
+
+  // Fetch KPI data
+  useEffect(() => {
+    const fetchKpiData = async () => {
+      setKpiLoading(true);
+      setKpiError(null);
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sales/kpi-summary`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data: KpiData = await response.json();
+        setKpiData(data);
+      } catch (e) {
+        if (e instanceof Error) {
+          setKpiError(e.message);
+        } else {
+          setKpiError("An unknown error occurred fetching KPIs");
+        }
+        console.error("Failed to fetch KPI data:", e);
+      } finally {
+        setKpiLoading(false);
+      }
+    };
+
+    fetchKpiData();
+  }, []);
+
+  // Helper function to format currency
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("en-PH", {
+      style: "currency",
+      currency: "PHP",
+    }).format(value);
+  };
+
   return (
     <>
       {/* Header section */}
@@ -49,36 +97,37 @@ export default function Sales() {
         {/* Left column - smaller */}
         <div className="w-full lg:w-1/3 flex flex-col gap-4">
           {/* KPI Cards Row */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <KpiCard 
-              title="Total Revenue" 
-              value="₱12,345.67" // Placeholder
-              icon={PhilippinePeso} 
-              description="+20.1% from last month" // Placeholder
-            />
-            <KpiCard 
-              title="Total Orders" 
-              value="589" // Placeholder
-              icon={ShoppingCart} 
-              description="+15% from last month" // Placeholder
-            />
-             <KpiCard 
-              title="Avg. Order Value" 
-              value="₱20.96" // Placeholder
-              icon={TrendingUp} 
-              description="+5.1% from last month" // Placeholder
-            />
-             <KpiCard 
-              title="New Customers" 
-              value="73" // Placeholder
-              icon={Users} 
-              description="+10 since last week" // Placeholder
-            />
-          </div>
+          {kpiLoading ? (
+            <Card><CardContent className="pt-6">Loading KPIs...</CardContent></Card>
+          ) : kpiError ? (
+            <Card><CardContent className="pt-6 text-destructive">Error loading KPIs: {kpiError}</CardContent></Card>
+          ) : kpiData ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <KpiCard 
+                title="Total Revenue" 
+                value={formatCurrency(kpiData.totalRevenue)}
+                icon={PhilippinePeso} 
+              />
+              <KpiCard 
+                title="Total Orders" 
+                value={kpiData.totalOrders.toString()}
+                icon={ShoppingCart} 
+              />
+              <KpiCard 
+                title="Avg. Order Value" 
+                value={formatCurrency(kpiData.averageOrderValue)}
+                icon={TrendingUp} 
+              />
+              <KpiCard 
+                title="New Customers (30d)" 
+                value={kpiData.newCustomers.toString()}
+                icon={Users} 
+              />
+            </div>
+          ) : (
+             <Card><CardContent className="pt-6">No KPI data available.</CardContent></Card>
+          )}
 
-          <div className="w-full">
-            <TopCategories/>
-          </div>
           <div className="w-full">
             <BarChartView/>
           </div>

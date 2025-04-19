@@ -1,5 +1,6 @@
 "use client"
 
+import React, { useState, useEffect } from "react"
 import { TrendingUp } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts"
 
@@ -17,27 +18,54 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-const chartData = [
-  { month: "January", visitors: 186 },
-  { month: "February", visitors: 205 },
-  { month: "March", visitors: -207 },
-  { month: "April", visitors: 173 },
-  { month: "May", visitors: -209 },
-  { month: "June", visitors: 214 },
-]
 
+// configuration for customer count
 const chartConfig = {
-  visitors: {
-    label: "Visitors",
-  },
+  count: { label: 'Customers' }
 } satisfies ChartConfig
 
 export function BarChartView() {
+  const [chartData, setChartData] = useState<Array<{ month: string; count: number }>>([])
+  const [error, setError] = useState<string | null>(null)
+  
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/sales/customer-acquisition-churn`)
+        if (!res.ok) {
+          throw new Error('Failed to fetch data')
+        }
+        const json = await res.json()
+        setChartData(json)
+        setError(null)
+      } catch (error) {
+        console.error('Failed to fetch customer data', error)
+        setError('Unable to load customer data. Please try again later.')
+        setChartData([])
+      }
+    }
+    fetchData()
+  }, [])
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Customer Acquisition vs Churn</CardTitle>
+          <CardDescription>Last 6 months</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-[350px] text-destructive">
+          {error}
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Sales Per</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
+        <CardTitle>Customer Acquisition vs Churn</CardTitle>
+        <CardDescription>Last 6 months</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
@@ -52,16 +80,12 @@ export function BarChartView() {
                 cursor={false}
                 content={<ChartTooltipContent hideLabel hideIndicator />}
               />
-              <Bar dataKey="visitors">
+              <Bar dataKey="count">
                 <LabelList position="top" dataKey="month" fillOpacity={1} />
                 {chartData.map((item) => (
                   <Cell
                     key={item.month}
-                    fill={
-                      item.visitors > 0
-                        ? "hsl(var(--chart-1))"
-                        : "hsl(var(--chart-2))"
-                    }
+                    fill={item.count > 0 ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-2))'}
                   />
                 ))}
               </Bar>
