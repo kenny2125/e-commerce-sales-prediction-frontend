@@ -139,9 +139,24 @@
   animation: fadeIn 0.5s ease-in-out;
 }
 
-
-
-
+/* Print styling */
+@media print {
+  /* Hide all content */
+  body * {
+    visibility: hidden;
+  }
+  /* Show printable area */
+  .printable-area, .printable-area * {
+    visibility: visible;
+  }
+  /* Position printable area at top-left */
+  .printable-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+}
 
 @layer base {
   * {

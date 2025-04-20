@@ -18,7 +18,7 @@ import {
 import { ArrowUpDown, ChevronDown, MoreHorizontal, Loader2, ClipboardList } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { ScrollText } from "lucide-react"
+
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -37,6 +37,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { OrderDetailDialog, OrderDetail } from "@/components/dialogs/OrderDetailDialog";
+import { Badge } from "@/components/ui/badge";
 
 export type Orders = {
   orderID: string
@@ -59,11 +62,66 @@ export function Orders() {
   const [stats, setStats] = React.useState<{ totalOrders: number; processingOrders: number; paidOrders: number; totalRevenue: number } | null>(null)
   const [statsLoading, setStatsLoading] = React.useState(true)
   const [statsError, setStatsError] = React.useState<string | null>(null)
+  const [selectedOrder, setSelectedOrder] = React.useState<OrderDetail | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = React.useState(false);
+  const [detailLoading, setDetailLoading] = React.useState(false);
 
   const formatCurrency = (value?: number | null) => {
     if (value == null) return 'PHP 0.00'
     return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value)
   }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getPaymentStatusBadge = (status: string) => {
+    let className = "";
+    
+    switch (status.toLowerCase()) {
+      case 'paid':
+        className = "bg-green-500";
+        break;
+      case 'processing':
+        className = "bg-yellow-500";
+        break;
+      case 'cancelled':
+        className = "bg-red-500";
+        break;
+      case 'refunded':
+        className = "bg-purple-500";
+        break;
+      default:
+        className = "bg-gray-500";
+    }
+    
+    return <Badge variant="outline" className={className}>{status}</Badge>;
+  };
+
+  const getPickupStatusBadge = (status: string) => {
+    let className = "";
+    
+    switch (status.toLowerCase()) {
+      case 'claimed':
+        className = "bg-green-500";
+        break;
+      case 'ready to claim':
+        className = "bg-blue-500";
+        break;
+      case 'cancelled':
+        className = "bg-red-500";
+        break;
+      default:
+        className = "bg-gray-500";
+    }
+    
+    return <Badge variant="outline" className={className}>{status}</Badge>;
+  };
 
   // Fetch orders
   React.useEffect(() => {
@@ -127,6 +185,27 @@ export function Orders() {
     fetchStats()
   }, [])
 
+  // Load order detail including items
+  const handleOpenDetail = async (orderID: string) => {
+    setDetailLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${orderID}`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      });
+      if (!res.ok) throw new Error('Failed to fetch order details');
+      const data: OrderDetail = await res.json();
+      setSelectedOrder(data);
+      setDetailDialogOpen(true);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to load order details');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   const columns: ColumnDef<Orders>[] = [
     {
       accessorKey: "orderID",
@@ -139,14 +218,14 @@ export function Orders() {
       accessorKey: "paymentStatus",
       header: "Payment Status",
       cell: ({ row }) => (
-        <div className="capitalize">{row.getValue("paymentStatus")}</div>
+        <div>{getPaymentStatusBadge(row.getValue("paymentStatus"))}</div>
       ),
     },
     {
       accessorKey: "pickupStatus",
       header: "Pickup Status",
       cell: ({ row }) => (
-        <div className="capitalize">{row.getValue("pickupStatus")}</div>
+        <div>{getPickupStatusBadge(row.getValue("pickupStatus"))}</div>
       ),
     },
     {
@@ -160,7 +239,7 @@ export function Orders() {
       accessorKey: "orderDate",
       header: "Order Date",
       cell: ({ row }) => (
-        <div className="capitalize">{row.getValue("orderDate")}</div>
+        <div>{formatDate(row.getValue("orderDate"))}</div>
       ),
     },
     {
@@ -180,127 +259,6 @@ export function Orders() {
           currency: "PHP",
         }).format(amount)
         return <div className="text-right font-medium">{formatted}</div>
-      },
-    },
-    {
-      id: "actions",
-      enableHiding: false,
-      cell: ({ row }) => {
-        const order = row.original
-
-        const handleUpdateStatus = async (status: string) => {
-          try {
-            const token = localStorage.getItem('token')
-            if (!token) {
-              throw new Error('No authentication token found')
-            }
-
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${order.orderID}/status`, {
-              method: 'PUT',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ status })
-            })
-            
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}))
-              console.error('Failed to update status:', {
-                status: response.status,
-                statusText: response.statusText,
-                error: errorData
-              })
-              throw new Error('Failed to update status')
-            }
-            
-            const updatedOrder = await response.json()
-            setOrders(prev => prev.map(o => 
-              o.orderID === order.orderID ? updatedOrder : o
-            ))
-            
-            toast.success('Order status updated successfully')
-          } catch (error) {
-            console.error('Error updating order status:', error)
-            toast.error('Failed to update order status')
-          }
-        }
-
-        const handleDelete = async () => {
-          try {
-            const token = localStorage.getItem('token')
-            if (!token) {
-              throw new Error('No authentication token found')
-            }
-
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${order.orderID}`, {
-              method: 'DELETE',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              }
-            })
-            
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}))
-              console.error('Failed to delete order:', {
-                status: response.status,
-                statusText: response.statusText,
-                error: errorData
-              })
-              throw new Error('Failed to delete order')
-            }
-            
-            setOrders(prev => prev.filter(o => o.orderID !== order.orderID))
-            toast.success('Order deleted successfully')
-          } catch (error) {
-            console.error('Error deleting order:', error)
-            toast.error('Failed to delete order')
-          }
-        }
-
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(order.orderID)}
-              >
-                Copy order ID
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>Update Status</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => handleUpdateStatus("Processing")}>
-                Mark as Processing
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleUpdateStatus("Paid")}>
-                Mark as Paid
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleUpdateStatus("Ready to Claim")}>
-                Mark as Ready to Claim
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleUpdateStatus("Claimed")}>
-                Mark as Claimed
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleUpdateStatus("Cancelled")}>
-                Mark as Cancelled
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={handleDelete}
-                className="text-red-600"
-              >
-                Delete Order
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
       },
     },
   ]
@@ -434,6 +392,8 @@ export function Orders() {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className="cursor-pointer"
+                  onClick={() => handleOpenDetail(row.original.orderID)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="whitespace-nowrap">
@@ -483,6 +443,15 @@ export function Orders() {
           </Button>
         </div>
       </div>
+
+      {/* Order Detail Dialog */}
+      {selectedOrder && (
+        <OrderDetailDialog
+          order={selectedOrder}
+          open={detailDialogOpen}
+          onOpenChange={setDetailDialogOpen}
+        />
+      )}
     </div>
   )
 }
