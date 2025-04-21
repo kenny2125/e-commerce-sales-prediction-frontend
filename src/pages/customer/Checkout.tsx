@@ -152,16 +152,6 @@ const Checkout = () => {
         throw new Error('Failed to create order');
       }
 
-      // Clear the purchased items from the cart
-      for (const item of cartItems) {
-        await fetch(`${import.meta.env.VITE_API_URL}/api/cart/remove/${item.product_id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-      }
-
       // Clear checkout items from localStorage
       localStorage.removeItem('checkoutItems');
       
