@@ -3,9 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RegistrationData } from "@/contexts/UserContext";
-import { Eye, EyeOff, CheckCircle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 
 interface RegistrationFormProps {
   onToggleMode: () => void;
@@ -20,21 +19,20 @@ export function RegistrationForm({
   error,
   onSuccess,
 }: RegistrationFormProps) {
-  const [regData, setRegData] = useState<RegistrationData>({
+  const [regData, setRegData] = useState<Omit<RegistrationData, 'gender'>>({
     username: "",
     email: "",
     password: "",
     first_name: "",
     last_name: "",
-    gender: "",
     address: "",
-    phone: "",
+    phone: "+63", // Initialize phone with +63 prefix
   });
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
 
@@ -51,16 +49,16 @@ export function RegistrationForm({
       case "first_name":
         if (!value.trim()) return "First name is required";
         if (!/^[A-Za-z\s]+$/.test(value)) return "Should contain only letters";
+        if (value.length > 50) return "First name cannot exceed 50 characters";
         return "";
       case "last_name":
         if (!value.trim()) return "Last name is required";
         if (!/^[A-Za-z\s]+$/.test(value)) return "Should contain only letters";
-        return "";
-      case "gender":
-        if (!value) return "Please select a gender";
+        if (value.length > 50) return "Last name cannot exceed 50 characters";
         return "";
       case "address":
         if (!value.trim()) return "Address is required";
+        if (value.length > 255) return "Address cannot exceed 255 characters";
         return "";
       case "email":
         if (!value.trim()) return "Email is required";
@@ -68,12 +66,13 @@ export function RegistrationForm({
         return "";
       case "phone":
         if (!value.trim()) return "Phone number is required";
-        if (!/^[0-9+\-\s()]{7,15}$/.test(value)) return "Please enter a valid phone number";
+        if (!/^\+639\d{9}$/.test(value)) return "Phone must be in the format +639XXXXXXXXX";
         return "";
       case "username":
         if (!value.trim()) return "Username is required";
         if (value.length < 4) return "Username must be at least 4 characters";
-        if (!/^[A-Za-z0-9_]+$/.test(value)) return "Username should be alphanumeric";
+        if (value.length > 30) return "Username cannot exceed 30 characters";
+        if (!/^[A-Za-z0-9_]+$/.test(value)) return "Username should be alphanumeric or underscore";
         return "";
       case "password":
         if (!value) return "Password is required";
@@ -93,7 +92,6 @@ export function RegistrationForm({
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate all fields before submission
     const validationErrors: Record<string, string> = {};
     Object.entries(regData).forEach(([key, value]) => {
       const error = validateField(key, value as string);
@@ -124,11 +122,10 @@ export function RegistrationForm({
         return;
       }
       
-      // On success, show success overlay and then switch back to the login form
       setRegistrationStatus('success');
       setShowSuccessOverlay(true);
       setTimeout(() => {
-        onToggleMode(); // switch back to login form
+        onToggleMode();
         setTimeout(() => {
           setShowSuccessOverlay(false);
         }, 500);
@@ -140,29 +137,36 @@ export function RegistrationForm({
     }
   };
 
-  const handleRegDataChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleRegDataChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     let field = id;
     
-    // Map form field IDs to backend field names
     if (id === "firstName") field = "first_name";
     if (id === "lastName") field = "last_name";
     if (id === "reg-username") field = "username";
     if (id === "reg-password") field = "password";
+
+    let finalValue = value;
+    // Ensure phone number always starts with +63 and cannot be deleted
+    if (field === "phone") {
+      if (!value.startsWith("+63") || value.length < 3) {
+        finalValue = "+63";
+      } else if (value.length > 13) { // Prevent typing more than 13 characters
+        finalValue = value.slice(0, 13);
+      }
+    }
     
     setRegData(prev => ({
       ...prev,
-      [field]: value
+      [field]: finalValue
     }));
     
-    // Validate on change
-    const error = validateField(field, value);
+    const error = validateField(field, finalValue);
     setErrors(prev => ({
       ...prev,
       [field]: error
     }));
     
-    // Mark as touched
     setTouched(prev => ({
       ...prev,
       [field]: true
@@ -175,27 +179,13 @@ export function RegistrationForm({
       [field]: true
     }));
     
-    // Validate on blur
-    const value = field === "confirmPassword" ? confirmPassword : regData[field as keyof RegistrationData] as string;
+    const value = field === "confirmPassword" 
+      ? confirmPassword 
+      : regData[field as keyof Omit<RegistrationData, 'gender'>] as string;
     const error = validateField(field, value);
     setErrors(prev => ({
       ...prev,
       [field]: error
-    }));
-  };
-  
-  const handleSelectChange = (value: string, field: string) => {
-    setRegData(prev => ({ ...prev, [field]: value }));
-    
-    const error = validateField(field, value);
-    setErrors(prev => ({
-      ...prev,
-      [field]: error
-    }));
-    
-    setTouched(prev => ({
-      ...prev,
-      [field]: true
     }));
   };
   
@@ -222,7 +212,6 @@ export function RegistrationForm({
   return (
     <form onSubmit={handleRegister} className="flex flex-col">
       <div className="flex flex-col align-top py-4 w-full gap-6">
-        {/* Personal information section */}
         <div className="flex flex-col sm:flex-row gap-4 w-full">
           <div className="flex-1">
             <Input
@@ -232,6 +221,7 @@ export function RegistrationForm({
               onChange={handleRegDataChange}
               onBlur={() => handleBlur("first_name")}
               required
+              maxLength={50}
               className={errors.first_name && touched.first_name ? "border-red-500" : ""}
             />
             {errors.first_name && touched.first_name && (
@@ -247,34 +237,15 @@ export function RegistrationForm({
               onChange={handleRegDataChange}
               onBlur={() => handleBlur("last_name")}
               required
+              maxLength={50}
               className={errors.last_name && touched.last_name ? "border-red-500" : ""}
             />
             {errors.last_name && touched.last_name && (
               <p className="text-xs text-red-500">{errors.last_name}</p>
             )}
           </div>
-          
-          <div className="flex-1">
-            <Select 
-              value={regData.gender} 
-              onValueChange={(value) => handleSelectChange(value, "gender")}
-              onOpenChange={(open) => !open && handleBlur("gender")}
-            >
-              <SelectTrigger className={`w-full ${errors.gender && touched.gender ? "border-red-500" : ""}`}>
-                <SelectValue placeholder="Gender" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Male">Male</SelectItem>
-                <SelectItem value="Female">Female</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.gender && touched.gender && (
-              <p className="text-xs text-red-500 mt-1">{errors.gender}</p>
-            )}
-          </div>
         </div>
 
-        {/* Address section */}
         <div className="w-full">
           <Input
             id="address"
@@ -283,6 +254,7 @@ export function RegistrationForm({
             onChange={handleRegDataChange}
             onBlur={() => handleBlur("address")}
             required
+            maxLength={255}
             className={errors.address && touched.address ? "border-red-500" : ""}
           />
           {errors.address && touched.address && (
@@ -290,7 +262,6 @@ export function RegistrationForm({
           )}
         </div>
 
-        {/* Contact information section */}
         <div className="flex flex-col sm:flex-row gap-4 w-full">
           <div className="flex-1">
             <Input
@@ -312,11 +283,12 @@ export function RegistrationForm({
             <Input
               id="phone"
               type="tel"
-              placeholder="Contact number"
-              value={regData.phone}
-              onChange={handleRegDataChange}
+              placeholder="+639XXXXXXXXX"
+              value={regData.phone} // Bind to state
+              onChange={handleRegDataChange} // Use updated handler
               onBlur={() => handleBlur("phone")}
               required
+              maxLength={13}
               className={errors.phone && touched.phone ? "border-red-500" : ""}
             />
             {errors.phone && touched.phone && (
@@ -325,12 +297,11 @@ export function RegistrationForm({
           </div>
         </div>
 
-        <div className="flex flex-col justify-center align-middle w-full mt-2">
+        <div className="flex flex-col justify-center items-center w-full mt-2">
           <h3 className="text-sm font-medium">Login Information</h3>
           <div className="h-px bg-border my-2"></div>
         </div>
 
-        {/* Login information section */}
         <div className="flex flex-col sm:flex-row items-start gap-4 w-full">
           <Label htmlFor="reg-username" className="min-w-20 text-right pt-2 sm:w-auto">
             Username
@@ -338,12 +309,13 @@ export function RegistrationForm({
           <div className="flex-1 w-full">
             <Input
               id="reg-username"
-              placeholder="Choose a username"
+              placeholder="Choose a username (4-30 chars)"
               className={`${errors.username && touched.username ? "border-red-500" : ""}`}
               value={regData.username}
               onChange={handleRegDataChange}
               onBlur={() => handleBlur("username")}
               required
+              maxLength={30}
             />
             {errors.username && touched.username && (
               <p className="text-xs text-red-500 mt-1">{errors.username}</p>
@@ -351,7 +323,6 @@ export function RegistrationForm({
           </div>
         </div>
 
-        {/* Password section */}
         <div className="flex flex-col sm:flex-row items-start gap-4 w-full">
           <Label htmlFor="reg-password" className="min-w-20 text-right pt-2 sm:w-auto">
             Password
@@ -360,22 +331,24 @@ export function RegistrationForm({
             <div className="relative">
               <Input
                 id="reg-password"
-                type={showPassword ? "text" : "password"}
+                type={passwordVisible ? "text" : "password"}
                 placeholder="Create password"
-                className={`${errors.password && touched.password ? "border-red-500" : ""} pr-10`}
+                className={`${errors.password && touched.password ? "border-red-500" : ""} pr-12`}
                 value={regData.password}
                 onChange={handleRegDataChange}
                 onBlur={() => handleBlur("password")}
                 required
               />
-              <button
+              <Button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 flex justify-center items-center w-6 h-6"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                variant="ghost"
+                size="sm"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2 text-xs"
+                onClick={() => setPasswordVisible(!passwordVisible)}
+                aria-label={passwordVisible ? "Hide password" : "Show password"}
               >
-                {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
-              </button>
+                {passwordVisible ? "Hide" : "Show"}
+              </Button>
             </div>
             {errors.password && touched.password && (
               <p className="text-xs text-red-500 mt-1">{errors.password}</p>
@@ -383,7 +356,6 @@ export function RegistrationForm({
           </div>
         </div>
 
-        {/* Confirm password section */}
         <div className="flex flex-col sm:flex-row items-start gap-4 w-full">
           <Label htmlFor="confirm-password" className="min-w-20 text-right pt-2 sm:w-auto">
             Confirm
@@ -392,22 +364,24 @@ export function RegistrationForm({
             <div className="relative">
               <Input
                 id="confirm-password"
-                type={showConfirmPassword ? "text" : "password"}
+                type={confirmPasswordVisible ? "text" : "password"}
                 placeholder="Confirm password"
-                className={`${errors.confirmPassword && touched.confirmPassword ? "border-red-500" : ""} pr-10`}
+                className={`${errors.confirmPassword && touched.confirmPassword ? "border-red-500" : ""} pr-12`}
                 value={confirmPassword}
                 onChange={handleConfirmPasswordChange}
                 onBlur={() => handleBlur("confirmPassword")}
                 required
               />
-              <button
+              <Button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 flex justify-center items-center w-6 h-6"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                variant="ghost"
+                size="sm"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2 text-xs"
+                onClick={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+                aria-label={confirmPasswordVisible ? "Hide password" : "Show password"}
               >
-                {showConfirmPassword ? <Eye size={18} /> : <EyeOff size={18} />}
-              </button>
+                {confirmPasswordVisible ? "Hide" : "Show"}
+              </Button>
             </div>
             {errors.confirmPassword && touched.confirmPassword && (
               <p className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>
