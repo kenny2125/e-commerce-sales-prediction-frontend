@@ -30,7 +30,9 @@ export default function Footer() {
               </div>
               <div className="flex items-center gap-2">
                 <MailIcon size={16} className="text-primary" />
-                <p>Email: skycos@yahoo.com, acctg.sky@gmail.com</p>
+                <p>
+                  Email: <a href="mailto:skycos@yahoo.com" className="hover:underline">skycos@yahoo.com</a>, <a href="mailto:acctg.sky@gmail.com" className="hover:underline">acctg.sky@gmail.com</a>
+                </p>
               </div>
             </div>
 
@@ -39,9 +41,14 @@ export default function Footer() {
               <h1 className="text-lg font-bold">Location</h1>
               <div className="flex gap-2 max-w-xs">
                 <MapPinIcon size={16} className="text-primary flex-shrink-0" />
-                <p className="text-sm text-center md:text-left">
+                <a 
+                  href="https://www.google.com/maps/search/?api=1&query=1618%20Felix%20Deleon%20Street%2C%20Tondo%2C%20Manila" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-sm text-center md:text-left hover:underline"
+                >
                   1618 Felix Deleon Street, Tondo, Manila
-                </p>
+                </a>
               </div>
             </div>
 

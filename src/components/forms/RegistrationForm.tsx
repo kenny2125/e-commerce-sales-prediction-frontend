@@ -4,19 +4,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { RegistrationData } from "@/contexts/UserContext";
-import { CheckCircle } from "lucide-react";
+import { SuccessOverlay } from "../SuccessOverlay"; // Corrected import path again
 
 interface RegistrationFormProps {
   onToggleMode: () => void;
   isLoading: boolean;
-  error: string | null;
+  error: string | null; // Keep the error prop from LogInDialog
   onSuccess: () => void;
 }
 
 export function RegistrationForm({
   onToggleMode,
-  isLoading,
-  error,
+  isLoading, // Use isLoading from props
+  error, // Use error from props
   onSuccess,
 }: RegistrationFormProps) {
   const [regData, setRegData] = useState<Omit<RegistrationData, 'gender'>>({
@@ -35,6 +35,7 @@ export function RegistrationForm({
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null); // Separate state for API errors
 
   useEffect(() => {
     const registerUrl = `${import.meta.env.VITE_API_URL}/api/auth/register`;
@@ -91,7 +92,8 @@ export function RegistrationForm({
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setApiError(null); // Clear previous API errors
+
     const validationErrors: Record<string, string> = {};
     Object.entries(regData).forEach(([key, value]) => {
       const error = validateField(key, value as string);
@@ -118,21 +120,23 @@ export function RegistrationForm({
       if (!res.ok) {
         const result = await res.json();
         console.error(result);
+        setApiError(result.message || "Registration failed. Please check your details."); // Set API error message
         setRegistrationStatus('error');
         return;
       }
       
       setRegistrationStatus('success');
-      setShowSuccessOverlay(true);
+      setShowSuccessOverlay(true); // Show the overlay
       setTimeout(() => {
-        onToggleMode();
+        onToggleMode(); // Toggle back to login form
         setTimeout(() => {
-          setShowSuccessOverlay(false);
+          setShowSuccessOverlay(false); // Hide overlay after a short delay
         }, 500);
-      }, 2000);
+      }, 2000); // Keep overlay for 2 seconds
       
     } catch (err) {
       console.error(err);
+      setApiError("An unexpected error occurred during registration."); // Set generic error
       setRegistrationStatus('error');
     }
   };
@@ -200,13 +204,9 @@ export function RegistrationForm({
     }));
   };
 
+  // Use the reusable SuccessOverlay component
   if (showSuccessOverlay) {
-    return (
-      <div className="h-fit flex flex-col items-center justify-center z-50 animate-fadeIn mb-16">
-        <CheckCircle className="w-20 h-20 text-green-500 " />
-        <h2 className="text-2xl font-bold text-green-600">Registration Successful!</h2>
-      </div>
-    );
+    return <SuccessOverlay message="Registration Successful!" />;
   }
 
   return (
@@ -390,13 +390,12 @@ export function RegistrationForm({
         </div>
       </div>
       
-      {registrationStatus === 'error' && (
+      {/* Display API error or prop error */}
+      {(apiError || error) && (
         <div className="w-full text-center py-2 px-4 text-destructive text-sm">
-          Registration failed. Please try again.
+          {apiError || error}
         </div>
       )}
-      
-      {error && <p className="text-sm text-red-500 text-center">{error}</p>}
       
       <DialogDescription className="flex flex-row justify-center items-center">
         <div>Already have an account?</div>
@@ -404,8 +403,8 @@ export function RegistrationForm({
       </DialogDescription>
       
       <DialogFooter className="flex flex-col items-center">
-        <Button className="w-full" type="submit" disabled={registrationStatus === 'loading'}>
-          {registrationStatus === 'loading' ? "Registering..." : "Register"}
+        <Button className="w-full" type="submit" disabled={isLoading || registrationStatus === 'loading'}>
+          {isLoading || registrationStatus === 'loading' ? "Registering..." : "Register"}
         </Button>
       </DialogFooter>
     </form>

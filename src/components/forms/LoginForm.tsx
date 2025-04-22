@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, Eye } from "lucide-react"; // Import CheckCircle and Eye icons
+import { Eye } from "lucide-react"; // Import Eye icon
+import { SuccessOverlay } from "../SuccessOverlay"; // Corrected import path again
 
 interface LoginFormProps {
   onToggleMode: () => void;
@@ -56,7 +57,7 @@ export function LoginForm({ onToggleMode, isLoading, error, login }: LoginFormPr
       if (response.ok) {
         console.log('Login successful');
         setLoginStatus('success');
-        setShowSuccessOverlay(true);
+        setShowSuccessOverlay(true); // Show the overlay
         
         // Add delay before completing login process
         setTimeout(async () => {
@@ -84,14 +85,9 @@ export function LoginForm({ onToggleMode, isLoading, error, login }: LoginFormPr
     }
   };
 
-  // Success overlay component
+  // Use the reusable SuccessOverlay component
   if (showSuccessOverlay) {
-    return (
-      <div className="h-fit flex flex-col items-center justify-center z-50 animate-fadeIn mb-16">
-        <CheckCircle className="w-20 h-20 text-green-500 " />
-        <h2 className="text-2xl font-bold text-green-600">Login Successful!</h2>
-      </div>
-    );
+    return <SuccessOverlay message="Login Successful!" />;
   }
 
   return (
