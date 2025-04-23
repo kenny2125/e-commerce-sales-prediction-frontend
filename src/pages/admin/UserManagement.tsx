@@ -188,6 +188,12 @@ export function UserManagement() {
         const user = row.original
 
         const handleRoleUpdate = async (newRole: string) => {
+          // Don't allow changing role if the user is a customer
+          if (user.role === 'customer') {
+            toast.error('Customer roles cannot be changed')
+            return
+          }
+
           try {
             const token = localStorage.getItem('token')
             if (!token) {
