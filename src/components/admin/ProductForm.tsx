@@ -24,9 +24,26 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"; // Import Select components
-import type { Inventory } from "@/components/admin/InventoryColumns"; // Use alias path and type-only import
-import ImagePlaceholder from "@/assets/image-placeholder.webp"; // Import the placeholder image
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
+import { Check, ChevronsUpDown, PlusCircle } from "lucide-react"; // Import icons
+import { cn } from "@/lib/utils";
+import type { Inventory } from "@/components/admin/InventoryColumns";
+import ImagePlaceholder from "@/assets/image-placeholder.webp";
+import { Minus, Plus } from "lucide-react";
 
 type FormData = {
   product_id: string;
@@ -101,8 +118,255 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
         },
   });
 
+  // State for tracking product ID uniqueness
+  const [productIdState, setProductIdState] = React.useState<{
+    isChecking: boolean;
+    isDuplicate: boolean;
+    message: string;
+  }>({
+    isChecking: false,
+    isDuplicate: false,
+    message: "",
+  });
+
+  // States for categories and brands
+  const [categories, setCategories] = React.useState<string[]>([]);
+  const [brands, setBrands] = React.useState<string[]>([]);
+  const [isAddingCategory, setIsAddingCategory] = React.useState(false);
+  const [isAddingBrand, setIsAddingBrand] = React.useState(false);
+  const [newCategory, setNewCategory] = React.useState("");
+  const [newBrand, setNewBrand] = React.useState("");
+  const [isLoadingCategories, setIsLoadingCategories] = React.useState(false);
+  const [isLoadingBrands, setIsLoadingBrands] = React.useState(false);
+
+  // Fetch categories from API
+  const fetchCategories = async () => {
+    setIsLoadingCategories(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/product/categories`);
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  };
+
+  // Fetch brands from all products
+  const fetchBrands = async () => {
+    setIsLoadingBrands(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/product`);
+      if (response.ok) {
+        const products = await response.json();
+        // Extract unique brand names
+        const uniqueBrands = Array.from(
+          new Set(products.map((product: any) => product.brand))
+        ).filter(Boolean) as string[];
+        setBrands(uniqueBrands);
+      }
+    } catch (error) {
+      console.error("Error fetching brands:", error);
+    } finally {
+      setIsLoadingBrands(false);
+    }
+  };
+
+  // Handler for adding a new category
+  const handleAddCategory = () => {
+    if (newCategory && !categories.includes(newCategory)) {
+      setCategories([...categories, newCategory]);
+      form.setValue("category", newCategory);
+      setNewCategory("");
+      setIsAddingCategory(false);
+    }
+  };
+
+  // Handler for adding a new brand
+  const handleAddBrand = () => {
+    if (newBrand && !brands.includes(newBrand)) {
+      setBrands([...brands, newBrand]);
+      form.setValue("brand", newBrand);
+      setNewBrand("");
+      setIsAddingBrand(false);
+    }
+  };
+
+  // Load categories and brands on component mount
+  React.useEffect(() => {
+    fetchCategories();
+    fetchBrands();
+  }, []);
+
+  // Function to check if product ID already exists
+  const checkProductIdExists = async (id: string) => {
+    if (!id) return;
+    
+    try {
+      setProductIdState({ isChecking: true, isDuplicate: false, message: "Checking..." });
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/product/${id}`);
+      
+      if (response.ok) {
+        // Product with this ID exists
+        setProductIdState({
+          isChecking: false,
+          isDuplicate: true,
+          message: "Warning: This Product ID already exists!",
+        });
+        return true;
+      } else if (response.status === 404) {
+        // Product ID is available
+        setProductIdState({
+          isChecking: false,
+          isDuplicate: false,
+          message: "Product ID is available",
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error("Error checking product ID:", error);
+      setProductIdState({
+        isChecking: false,
+        isDuplicate: false,
+        message: "Failed to check Product ID",
+      });
+    }
+    return false;
+  };
+
+  // Image preview, filename state, and processing handlers
+  const [previewSrc, setPreviewSrc] = React.useState<string>(initialData?.image_url || ImagePlaceholder);
+  const [selectedFileName, setSelectedFileName] = React.useState<string>(initialData?.image_url ? '' : '');
+
+  // Crop image to square and compress
+  const processImage = async (file: File): Promise<File> => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    return new Promise((resolve, reject) => {
+      img.onload = () => {
+        const size = Math.min(img.width, img.height);
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Canvas context not available'));
+        const sx = (img.width - size) / 2;
+        const sy = (img.height - size) / 2;
+        ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return reject(new Error('Image compression failed'));
+            const processed = new File([blob], file.name, { type: blob.type });
+            resolve(processed);
+          },
+          file.type,
+          0.8
+        );
+      };
+      img.onerror = (e) => reject(e);
+      img.src = url;
+    });
+  };
+
+  // Handle file input change: crop, compress, set preview & filename
+  const handleImageChange = async (files: FileList | null) => {
+    if (files && files[0]) {
+      const file = files[0];
+      setSelectedFileName(file.name);
+      const processed = await processImage(file);
+      setPreviewSrc(URL.createObjectURL(processed));
+      const dt = new DataTransfer();
+      dt.items.add(processed);
+      form.setValue('image', dt.files, { shouldValidate: true });
+    } else {
+      setSelectedFileName('');
+      setPreviewSrc(initialData?.image_url || ImagePlaceholder);
+      form.setValue('image', undefined);
+    }
+  };
+
+  // Watch quantity and update status automatically
+  const watchedQuantity = form.watch("quantity");
+  React.useEffect(() => {
+    form.setValue("status", watchedQuantity > 0 ? "In Stock" : "Out of Stock");
+  }, [watchedQuantity, form]);
+
+  // Handler for quantity increment/decrement
+  const handleQuantityChange = (change: number) => {
+    const current = form.getValues("quantity");
+    const newQty = Math.max(0, current + change);
+    form.setValue("quantity", newQty, { shouldValidate: true });
+  };
+
+  // Function to generate product ID based on input fields
+  const generateProductId = () => {
+    const category = form.getValues("category");
+    const brand = form.getValues("brand");
+    const productName = form.getValues("product_name");
+    
+    if (!category && !brand && !productName) return "";
+    
+    // Get first 3 chars of category (or fewer if shorter)
+    const categoryPrefix = category.slice(0, 3).toUpperCase();
+    
+    // Get first 2 chars of brand (or fewer if shorter)
+    const brandCode = brand.slice(0, 2).toUpperCase();
+    
+    // Get first 3 chars of product name
+    const nameCode = productName.slice(0, 3).toUpperCase();
+    
+    // Add timestamp to ensure uniqueness
+    const timestamp = new Date().getTime().toString().slice(-4);
+    
+    return `${categoryPrefix}${brandCode}${nameCode}-${timestamp}`;
+  };
+
+  // Watch product_id to check for duplicates
+  const watchProductId = form.watch("product_id");
+
+  React.useEffect(() => {
+    // Debounce the check to avoid too many API calls while typing
+    const handler = setTimeout(() => {
+      if (watchProductId && mode === "add") {
+        checkProductIdExists(watchProductId);
+      }
+    }, 500); // Wait 500ms after typing stops
+    
+    return () => clearTimeout(handler);
+  }, [watchProductId, mode]);
+
+  // Watch category, brand and product_name to update product_id
+  const watchCategory = form.watch("category");
+  const watchBrand = form.watch("brand");
+  const watchProductName = form.watch("product_name");
+
+  React.useEffect(() => {
+    // Only generate ID automatically in add mode and if product_id is empty
+    if (mode === "add" && !form.getValues("product_id")) {
+      const generatedId = generateProductId();
+      if (generatedId) {
+        form.setValue("product_id", generatedId);
+      }
+    }
+  }, [watchCategory, watchBrand, watchProductName, mode]);
+
   async function onSubmit(values: FormSchema) {
     try {
+      // Check for duplicate product ID before submitting in "add" mode
+      if (mode === "add") {
+        const isDuplicate = await checkProductIdExists(values.product_id);
+        if (isDuplicate) {
+          setFormMessage({
+            type: "error",
+            message: "Cannot add product: Product ID already exists. Please use a different ID.",
+          });
+          return; // Stop form submission
+        }
+      }
+      
       setIsSubmitting(true);
       setFormMessage(null); // Clear previous messages
       const token = localStorage.getItem("token");
@@ -234,27 +498,24 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
                   <div className="space-y-4">
                     {/* Image Preview Area */}
                     <div className="w-full h-auto max-h-48 flex items-center justify-center border rounded-md overflow-hidden bg-muted/30">
-                      {mode === "edit" && initialData?.image_url ? (
-                        <img
-                          src={initialData.image_url}
-                          alt="Current product"
-                          className="w-full h-full object-contain" /* Use contain to fit */
-                        />
-                      ) : (
-                        <img
-                          src={ImagePlaceholder} // Use imported placeholder
-                          alt="Product image placeholder"
-                          className="w-full h-full object-contain opacity-50" /* Style placeholder */
-                        />
-                      )}
+                      <img
+                        src={previewSrc}
+                        alt="Product preview"
+                        className="w-full h-full object-contain"
+                      />
                     </div>
                     {/* File Input */}
                     <Input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => onChange(e.target.files)}
+                      onChange={(e) => handleImageChange(e.target.files)}
                       {...fieldProps}
                     />
+                    {selectedFileName && (
+                      <p className="text-sm text-muted-foreground">
+                        Selected file: {selectedFileName}
+                      </p>
+                    )}
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -283,8 +544,24 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
               <FormItem>
                 <FormLabel>Product ID</FormLabel>
                 <FormControl>
-                  <Input {...field} disabled={mode === "edit"} />
+                  <div className="relative">
+                    <Input 
+                      {...field} 
+                      disabled={mode === "edit"} 
+                      className={productIdState.isDuplicate ? "border-red-500 pr-10" : ""}
+                    />
+                    {productIdState.isChecking && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                  </div>
                 </FormControl>
+                {productIdState.message && (
+                  <p className={`text-sm mt-1 ${productIdState.isDuplicate ? "text-red-500 font-medium" : "text-green-600"}`}>
+                    {productIdState.message}
+                  </p>
+                )}
                 <FormMessage />
               </FormItem>
             )}
@@ -293,11 +570,98 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
             control={form.control}
             name="category"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col">
                 <FormLabel>Category</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? categories.find(
+                              (category) => category === field.value
+                            ) || field.value
+                          : "Select category"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput
+                        placeholder="Search category..."
+                        className="h-9"
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          {isLoadingCategories ? "Loading..." : "No category found."}
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {categories.map((category) => (
+                            <CommandItem
+                              key={category}
+                              value={category}
+                              onSelect={() => {
+                                form.setValue("category", category);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  field.value === category
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {category}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                        <CommandSeparator />
+                        <CommandGroup>
+                          {isAddingCategory ? (
+                            <div className="flex items-center p-2">
+                              <Input
+                                value={newCategory}
+                                onChange={(e) => setNewCategory(e.target.value)}
+                                className="flex-1 mr-2"
+                                placeholder="Enter new category"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleAddCategory();
+                                  }
+                                }}
+                              />
+                              <Button
+                                size="sm"
+                                onClick={handleAddCategory}
+                                disabled={!newCategory}
+                              >
+                                Add
+                              </Button>
+                            </div>
+                          ) : (
+                            <CommandItem
+                              onSelect={() => setIsAddingCategory(true)}
+                              className="text-primary"
+                            >
+                              <PlusCircle className="mr-2 h-4 w-4" />
+                              Add new category
+                            </CommandItem>
+                          )}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
@@ -306,11 +670,98 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
             control={form.control}
             name="brand"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col">
                 <FormLabel>Brand</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? brands.find(
+                              (brand) => brand === field.value
+                            ) || field.value
+                          : "Select brand"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput
+                        placeholder="Search brand..."
+                        className="h-9"
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          {isLoadingBrands ? "Loading..." : "No brand found."}
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {brands.map((brand) => (
+                            <CommandItem
+                              key={brand}
+                              value={brand}
+                              onSelect={() => {
+                                form.setValue("brand", brand);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  field.value === brand
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {brand}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                        <CommandSeparator />
+                        <CommandGroup>
+                          {isAddingBrand ? (
+                            <div className="flex items-center p-2">
+                              <Input
+                                value={newBrand}
+                                onChange={(e) => setNewBrand(e.target.value)}
+                                className="flex-1 mr-2"
+                                placeholder="Enter new brand"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleAddBrand();
+                                  }
+                                }}
+                              />
+                              <Button
+                                size="sm"
+                                onClick={handleAddBrand}
+                                disabled={!newBrand}
+                              >
+                                Add
+                              </Button>
+                            </div>
+                          ) : (
+                            <CommandItem
+                              onSelect={() => setIsAddingBrand(true)}
+                              className="text-primary"
+                            >
+                              <PlusCircle className="mr-2 h-4 w-4" />
+                              Add new brand
+                            </CommandItem>
+                          )}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
@@ -336,10 +787,7 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Status</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select value={field.value} disabled>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
@@ -361,14 +809,35 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
                 <FormItem>
                   <FormLabel>Quantity</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) =>
-                        field.onChange(parseInt(e.target.value, 10) || 0)
-                      }
-                      min="0"
-                    />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleQuantityChange(-1)}
+                        disabled={field.value <= 0}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <Input
+                        type="number"
+                        {...field}
+                        min={0}
+                        className="w-16 text-center"
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          field.onChange(isNaN(val) || val < 0 ? 0 : val);
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleQuantityChange(1)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

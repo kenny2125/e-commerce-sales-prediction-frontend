@@ -6,9 +6,12 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import React, { useEffect, useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Search as SearchIcon } from "lucide-react";
+import { useUser } from "@/contexts/UserContext";
 
 interface Product {
   product_id: string;
@@ -20,7 +23,10 @@ interface Product {
 }
 
 export default function Search() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { currentUser } = useUser();
+  const isAdmin = currentUser?.role === "admin";
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -29,10 +35,22 @@ export default function Search() {
   const [sortBy, setSortBy] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"filters" | "results">("results");
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [searchInput, setSearchInput] = useState(searchParams.get("query") || "");
 
   const handlePriceChange = useCallback((value: number) => {
     setPriceRange([value]);
   }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchInput.trim()) {
+      setSearchParams({ query: searchInput.trim() });
+    } else {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("query");
+      setSearchParams(newParams);
+    }
+  };
 
   // Separate effect for fetching categories
   useEffect(() => {
@@ -222,6 +240,28 @@ export default function Search() {
           setSelectedCategories([]);
           setSortBy("");
           setPriceRange([maxPrice]);
+          
+          // Fetch all products when filters are reset
+          setLoading(true);
+          fetch(`${import.meta.env.VITE_API_URL}/api/product`)
+            .then(response => {
+              if (!response.ok) throw new Error('Failed to fetch products');
+              return response.json();
+            })
+            .then(data => {
+              setProducts(data);
+              // Reset the search parameters in the URL to remove any query or category filters
+              const params = new URLSearchParams(window.location.search);
+              if (params.has('query') || params.has('category')) {
+                window.history.pushState({}, '', window.location.pathname);
+              }
+            })
+            .catch(error => {
+              console.error('Error fetching products:', error);
+            })
+            .finally(() => {
+              setLoading(false);
+            });
         }}
       >
         Reset Filters
@@ -236,9 +276,32 @@ export default function Search() {
         <FilterCard />
         <div className="flex-1">
           <div>
-            <h1>
-              Results for: <span className="font-bold">{searchParams.get("query") || "All Products"}</span>
-            </h1>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <h1>
+                Results for: <span className="font-bold">{searchParams.get("query") || "All Products"}</span>
+              </h1>
+              {isAdmin && (
+                <form onSubmit={handleSearch} className="flex max-w-sm">
+                  <div className="relative w-full">
+                    <Input
+                      type="text"
+                      placeholder="Search products..."
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      className="pr-10"
+                    />
+                    <Button 
+                      type="submit" 
+                      variant="ghost" 
+                      size="icon" 
+                      className="absolute right-0 top-0 h-full"
+                    >
+                      <SearchIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
             {loading ? (
               <div className="flex justify-center items-center min-h-[200px]">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -288,10 +351,31 @@ export default function Search() {
             </div>
           ) : (
             <>
-              <div className="mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <h1>
                   Results for: <span className="font-bold">{searchParams.get("query") || "All Products"}</span>
                 </h1>
+                {isAdmin && (
+                  <form onSubmit={handleSearch} className="flex w-full sm:w-auto mt-2 sm:mt-0">
+                    <div className="relative w-full">
+                      <Input
+                        type="text"
+                        placeholder="Search products..."
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                        className="pr-10"
+                      />
+                      <Button 
+                        type="submit" 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute right-0 top-0 h-full"
+                      >
+                        <SearchIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </form>
+                )}
               </div>
               {loading ? (
                 <div className="flex justify-center items-center min-h-[200px]">

@@ -35,6 +35,7 @@ function ProductCard({ product }: ProductCardProps) {
   }, [currentUser, product.product_id]);
   
   function handleCardClick() {
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Add smooth scroll to top
     navigate(`/product?id=${product.product_id}`);
   }
   
@@ -84,38 +85,45 @@ function ProductCard({ product }: ProductCardProps) {
       className="w-full sm:max-w-[200px] md:max-w-[220px] lg:max-w-[240px] xl:max-w-[260px] flex flex-col justify-between h-full cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] active:scale-100"
       onClick={handleCardClick}
     >
-      <CardContent className="p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
-        <div className="aspect-square w-full relative bg-background/50 flex items-center justify-center">
-          <img 
-            src={imageError || !product.image_url ? defaultNoImage : product.image_url} 
-            alt={product.product_name} 
-            className="max-w-full max-h-full w-auto h-auto object-contain"
-            onError={() => setImageError(true)}
-          />
+      <CardContent className="p-2 sm:p-3 md:p-4 flex flex-col gap-2 sm:gap-3 md:gap-4">
+        <div className="w-full relative bg-background/50 overflow-hidden">
+          <div className="aspect-square w-full relative">
+            <img 
+              src={imageError || !product.image_url ? defaultNoImage : product.image_url} 
+              alt={product.product_name} 
+              className="absolute inset-0 w-full h-full object-contain"
+              onError={() => setImageError(true)}
+            />
+          </div>
         </div>
-        <div className='space-y-1.5 sm:space-y-2'>
-          <p className="text-xs sm:text-sm text-muted-foreground text-center">{product.brand}</p>
-          <h3 className='font-medium text-xs sm:text-sm md:text-base min-h-[2.5rem] line-clamp-2 text-center'>
+        <div className='space-y-1 sm:space-y-1.5 md:space-y-2'>
+          <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground text-center truncate">{product.brand}</p>
+          <h3 className='font-medium text-[11px] xs:text-xs sm:text-sm md:text-base min-h-[2.5em] line-clamp-2 text-center'>
             {product.product_name}
           </h3>
-          <p className='text-base sm:text-lg md:text-xl font-bold text-center text-primary'>
+          <p className='text-sm xs:text-base sm:text-lg md:text-xl font-bold text-center text-primary'>
             {formattedPrice}
           </p>
         </div>
       </CardContent>
-      <CardFooter className="px-4 pb-4 pt-0">
+      <CardFooter className="px-2 sm:px-3 md:px-4 pb-3 sm:pb-4 pt-0">
         {currentUser?.role === 'admin' ? (
           <Button 
             variant="default"
             size="sm"
             onClick={handleActionClick}
-            className="w-full flex items-center justify-center gap-2"
+            className="w-full flex items-center justify-center gap-1 sm:gap-2 text-[10px] xs:text-xs sm:text-sm"
           >
-            <Eye size={16} />
-            <span>View Details</span>
+            <Eye size={14} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
+            <span className="whitespace-nowrap">View Details</span>
           </Button>
         ) : product.quantity === 0 ? (
-          <Button variant="outline" size="sm" disabled className="w-full">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            disabled 
+            className="w-full text-[10px] xs:text-xs sm:text-sm"
+          >
             Out of Stock
           </Button>
         ) : (
@@ -124,12 +132,18 @@ function ProductCard({ product }: ProductCardProps) {
             size="sm" 
             onClick={handleActionClick}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2"
+            className="w-full flex items-center justify-center gap-1 sm:gap-2 text-[10px] xs:text-xs sm:text-sm"
           >
             {isInCart ? (
-              <><Trash2 size={16} /><span>Remove from Cart</span></>
+              <>
+                <Trash2 size={14} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
+                <span className="whitespace-nowrap">Remove from Cart</span>
+              </>
             ) : (
-              <><ShoppingCart size={16} /><span>Add to Cart</span></>
+              <>
+                <ShoppingCart size={14} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
+                <span className="whitespace-nowrap">Add to Cart</span>
+              </>
             )}
           </Button>
         )}

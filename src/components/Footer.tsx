@@ -10,8 +10,8 @@ export default function Footer() {
     <>
       <footer className="w-full py-8 mt-16">
         {/* Main footer content */}
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between gap-8">
+        <div className="w-full">
+          <div className="flex flex-col md:flex-row justify-between gap-2">
             {/* Logo section */}
             <div className="flex flex-col items-center md:items-start">
               <Logo />
@@ -20,19 +20,42 @@ export default function Footer() {
             {/* Contact section */}
             <div className="flex flex-col items-center md:items-start gap-4">
               <h1 className="text-lg font-bold">Contact Us</h1>
-              <div className="flex items-center gap-2">
-                <PhoneIcon size={16} className="text-primary" />
-                <p>Tel: 495-3333, 253-9310, 495-7878, 254-8940, 253-9250, 253-9359, 252-3049</p>
+              <div className="flex items-start gap-2">
+                <PhoneIcon size={16} className="text-primary mt-1" />
+                <div>
+                  <span className="font-bold">Tel:</span>
+                  <ul className="list-disc list-inside pl-2">
+                    <li>495-3333</li>
+                    <li>253-9310</li>
+                    <li>495-7878</li>
+                    <li>254-8940</li>
+                    <li>253-9250</li>
+                    <li>253-9359</li>
+                    <li>252-3049</li>
+                  </ul>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <PrinterIcon size={16} className="text-primary" />
                 <p>Fax: 254-0132</p>
               </div>
-              <div className="flex items-center gap-2">
-                <MailIcon size={16} className="text-primary" />
-                <p>
-                  Email: <a href="mailto:skycos@yahoo.com" className="hover:underline">skycos@yahoo.com</a>, <a href="mailto:acctg.sky@gmail.com" className="hover:underline">acctg.sky@gmail.com</a>
-                </p>
+              <div className="flex items-start gap-2">
+                <MailIcon size={16} className="text-primary mt-1" />
+                <div className="text-center md:text-left">
+                  <span className="font-bold">Email:</span>
+                  <ul className="list-disc list-inside pl-2">
+                    <li>
+                      <span className="inline-block align-middle">
+                        <a href="mailto:skycos@yahoo.com" className="hover:underline">skycos@yahoo.com</a>
+                      </span>
+                    </li>
+                    <li>
+                      <span className="inline-block align-middle">
+                        <a href="mailto:acctg.sky@gmail.com" className="hover:underline">acctg.sky@gmail.com</a>
+                      </span>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
 
@@ -57,24 +80,24 @@ export default function Footer() {
               <div className="flex flex-col items-center md:items-start gap-2">
                 <h1 className="text-lg font-bold">Who are we?</h1>
                 <div className="flex flex-col items-center md:items-start gap-2">
-                  <Link to="/about-us">About Us</Link>
-                  <Link to="/faq">FAQ</Link>
-                  <Link to="/contact-us">Contact Us</Link>
+                  <Link to="/about-us" onClick={() => window.scrollTo(0, 0)} className="hover:underline">About Us</Link>
+                  <Link to="/faq" onClick={() => window.scrollTo(0, 0)} className="hover:underline">FAQ</Link>
+                  <Link to="/contact-us" onClick={() => window.scrollTo(0, 0)} className="hover:underline">Contact Us</Link>
                 </div>
               </div>
               
               <div className="flex flex-col items-center md:items-start gap-2">
                 <h1 className="text-lg font-bold">Legal Terms</h1>
                 <div className="flex flex-col items-center md:items-start gap-2">
-                  <Link to="/terms&conditions">Terms & Conditions</Link>
-                  <Link to="/privacy-policy">Privacy Policy</Link>
+                  <Link to="/terms&conditions" onClick={() => window.scrollTo(0, 0)} className="hover:underline">Terms & Conditions</Link>
+                  <Link to="/privacy-policy" onClick={() => window.scrollTo(0, 0)} className="hover:underline">Privacy Policy</Link>
                 </div>
               </div>
               
               <div className="flex flex-col items-center md:items-start gap-2">
                 <h1 className="text-lg font-bold">Others</h1>
                 <div className="flex flex-col items-center md:items-start gap-2">
-                  <Link to="/purchasing-guide">Purchasing Guide</Link>
+                  <Link to="/purchasing-guide" onClick={() => window.scrollTo(0, 0)} className="hover:underline">Purchasing Guide</Link>
                 </div>
               </div>
             </div>

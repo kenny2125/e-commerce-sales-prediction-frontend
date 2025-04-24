@@ -4,11 +4,11 @@ import * as React from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react"; // Import ArrowUpDown
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -50,9 +50,36 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
         </Button>
       );
     },
-    cell: ({ row }) => (
-      <div className="capitalize pl-4">{row.getValue("product_id")}</div>
-    ),
+    cell: ({ row }) => {
+      const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+      const product = row.original;
+      return (
+        <>
+          <div
+            className="capitalize pl-4 cursor-pointer hover:bg-muted/40"
+            onClick={() => setIsEditDialogOpen(true)}
+          >
+            {row.getValue("product_id")}
+          </div>
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Edit Product</DialogTitle>
+                <DialogDescription>
+                  Make changes to the product details below. Click update when
+                  you're done.
+                </DialogDescription>
+              </DialogHeader>
+              <ProductForm
+                initialData={product}
+                onSuccess={() => setIsEditDialogOpen(false)}
+                mode="edit"
+              />
+            </DialogContent>
+          </Dialog>
+        </>
+      );
+    },
   },
   {
     accessorKey: "category",
@@ -67,9 +94,36 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
         </Button>
       );
     },
-    cell: ({ row }) => (
-      <div className="capitalize pl-4">{row.getValue("category")}</div>
-    ),
+    cell: ({ row }) => {
+      const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+      const product = row.original;
+      return (
+        <>
+          <div
+            className="capitalize pl-4 cursor-pointer hover:bg-muted/40"
+            onClick={() => setIsEditDialogOpen(true)}
+          >
+            {row.getValue("category")}
+          </div>
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Edit Product</DialogTitle>
+                <DialogDescription>
+                  Make changes to the product details below. Click update when
+                  you're done.
+                </DialogDescription>
+              </DialogHeader>
+              <ProductForm
+                initialData={product}
+                onSuccess={() => setIsEditDialogOpen(false)}
+                mode="edit"
+              />
+            </DialogContent>
+          </Dialog>
+        </>
+      );
+    },
   },
   {
     accessorKey: "brand",
@@ -84,9 +138,36 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
         </Button>
       );
     },
-    cell: ({ row }) => (
-      <div className="capitalize pl-4">{row.getValue("brand")}</div>
-    ),
+    cell: ({ row }) => {
+      const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+      const product = row.original;
+      return (
+        <>
+          <div
+            className="capitalize pl-4 cursor-pointer hover:bg-muted/40"
+            onClick={() => setIsEditDialogOpen(true)}
+          >
+            {row.getValue("brand")}
+          </div>
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Edit Product</DialogTitle>
+                <DialogDescription>
+                  Make changes to the product details below. Click update when
+                  you're done.
+                </DialogDescription>
+              </DialogHeader>
+              <ProductForm
+                initialData={product}
+                onSuccess={() => setIsEditDialogOpen(false)}
+                mode="edit"
+              />
+            </DialogContent>
+          </Dialog>
+        </>
+      );
+    },
   },
   {
     accessorKey: "product_name",
@@ -101,9 +182,36 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
         </Button>
       );
     },
-    cell: ({ row }) => (
-      <div className="capitalize pl-4">{row.getValue("product_name")}</div>
-    ),
+    cell: ({ row }) => {
+      const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+      const product = row.original;
+      return (
+        <>
+          <div
+            className="capitalize pl-4 cursor-pointer hover:bg-muted/40"
+            onClick={() => setIsEditDialogOpen(true)}
+          >
+            {row.getValue("product_name")}
+          </div>
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Edit Product</DialogTitle>
+                <DialogDescription>
+                  Make changes to the product details below. Click update when
+                  you're done.
+                </DialogDescription>
+              </DialogHeader>
+              <ProductForm
+                initialData={product}
+                onSuccess={() => setIsEditDialogOpen(false)}
+                mode="edit"
+              />
+            </DialogContent>
+          </Dialog>
+        </>
+      );
+    },
   },
   {
     accessorKey: "status",
@@ -118,9 +226,43 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
         </Button>
       );
     },
-    cell: ({ row }) => (
-      <div className="capitalize pl-4">{row.getValue("status")}</div>
-    ),
+    cell: ({ row }) => {
+      const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+      const product = row.original;
+      const status = row.getValue("status") as string;
+      
+      return (
+        <>
+          <div
+            className="flex items-center justify-center cursor-pointer hover:bg-muted/40 px-4"
+            onClick={() => setIsEditDialogOpen(true)}
+          >
+            <Badge 
+              variant={status === "In Stock" ? "default" : "destructive"} 
+              className={status === "In Stock" ? "bg-green-500 hover:bg-green-600" : ""}
+            >
+              {status}
+            </Badge>
+          </div>
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Edit Product</DialogTitle>
+                <DialogDescription>
+                  Make changes to the product details below. Click update when
+                  you're done.
+                </DialogDescription>
+              </DialogHeader>
+              <ProductForm
+                initialData={product}
+                onSuccess={() => setIsEditDialogOpen(false)}
+                mode="edit"
+              />
+            </DialogContent>
+          </Dialog>
+        </>
+      );
+    },
   },
   {
     accessorKey: "quantity",
@@ -136,9 +278,36 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
         </Button>
       );
     },
-    cell: ({ row }) => (
-      <div className="text-center">{row.getValue("quantity")}</div>
-    ),
+    cell: ({ row }) => {
+      const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+      const product = row.original;
+      return (
+        <>
+          <div
+            className="text-center cursor-pointer hover:bg-muted/40"
+            onClick={() => setIsEditDialogOpen(true)}
+          >
+            {row.getValue("quantity")}
+          </div>
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Edit Product</DialogTitle>
+                <DialogDescription>
+                  Make changes to the product details below. Click update when
+                  you're done.
+                </DialogDescription>
+              </DialogHeader>
+              <ProductForm
+                initialData={product}
+                onSuccess={() => setIsEditDialogOpen(false)}
+                mode="edit"
+              />
+            </DialogContent>
+          </Dialog>
+        </>
+      );
+    },
   },
   {
     accessorKey: "store_price",
@@ -155,29 +324,83 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
       );
     },
     cell: ({ row }) => {
+      const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+      const product = row.original;
       const amount = parseFloat(row.getValue("store_price"));
       const formatted = new Intl.NumberFormat("en-PH", {
         style: "currency",
         currency: "PHP",
       }).format(amount);
-      return <div className="text-right font-medium pr-4">{formatted}</div>;
+      return (
+        <>
+          <div
+            className="text-right font-medium pr-4 cursor-pointer hover:bg-muted/40"
+            onClick={() => setIsEditDialogOpen(true)}
+          >
+            {formatted}
+          </div>
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Edit Product</DialogTitle>
+                <DialogDescription>
+                  Make changes to the product details below. Click update when
+                  you're done.
+                </DialogDescription>
+              </DialogHeader>
+              <ProductForm
+                initialData={product}
+                onSuccess={() => setIsEditDialogOpen(false)}
+                mode="edit"
+              />
+            </DialogContent>
+          </Dialog>
+        </>
+      );
     },
   },
   {
     accessorKey: "image_url",
     header: () => <div className="text-center">Image</div>,
     cell: ({ row }) => {
+      const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+      const product = row.original;
       const imageUrl = row.getValue("image_url") as string;
-      return imageUrl ? (
-        <img
-          src={imageUrl}
-          alt={row.getValue("product_name")}
-          className="w-16 h-16 object-cover rounded-md mx-auto"
-        />
-      ) : (
-        <div className="w-16 h-16 bg-gray-100 rounded-md flex items-center justify-center text-xs text-gray-500 mx-auto">
-          No image
-        </div>
+      return (
+        <>
+          <div
+            className="cursor-pointer hover:bg-muted/40"
+            onClick={() => setIsEditDialogOpen(true)}
+          >
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={row.getValue("product_name")}
+                className="w-16 h-16 object-cover rounded-md mx-auto"
+              />
+            ) : (
+              <div className="w-16 h-16 bg-gray-100 rounded-md flex items-center justify-center text-xs text-gray-500 mx-auto">
+                No image
+              </div>
+            )}
+          </div>
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Edit Product</DialogTitle>
+                <DialogDescription>
+                  Make changes to the product details below. Click update when
+                  you're done.
+                </DialogDescription>
+              </DialogHeader>
+              <ProductForm
+                initialData={product}
+                onSuccess={() => setIsEditDialogOpen(false)}
+                mode="edit"
+              />
+            </DialogContent>
+          </Dialog>
+        </>
       );
     },
     enableSorting: false,
@@ -240,7 +463,6 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
                 Edit Product
               </DropdownMenuItem>

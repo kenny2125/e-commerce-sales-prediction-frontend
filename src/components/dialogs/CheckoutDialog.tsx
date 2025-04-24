@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
@@ -30,6 +30,14 @@ const CheckoutDialog = ({
   total,
   purpose, // destructure new prop
 }: CheckoutDialogProps) => {
+  useEffect(() => {
+    if (open && isSuccessful) {
+      // Remove cart and checkout items from storage on successful order
+      localStorage.removeItem('cartItems');
+      localStorage.removeItem('checkoutItems');
+    }
+  }, [open, isSuccessful]);
+
   const navigate = useNavigate();
 
   const handleContinue = () => {

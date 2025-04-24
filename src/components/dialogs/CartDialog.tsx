@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { QuantityInput } from "@/components/ui/quantity-input";
+import { useUser } from "@/contexts/UserContext";
+import { LogInDialog } from "@/components/dialogs/LogInDialog";
 
 // Use API to fetch up‑to‑date product info
 const API_URL = import.meta.env.VITE_API_URL;
@@ -38,6 +40,8 @@ interface CartItem {
 export function CartDialog() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const { currentUser } = useUser();
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -95,6 +99,10 @@ export function CartDialog() {
   };
 
   const handleCheckout = () => {
+    if (!currentUser) {
+      setLoginDialogOpen(true);
+      return;
+    }
     // Filter cart items to only include selected ones
     const selectedProducts = cartItems.filter(item => 
       selectedItems.includes(item.product_id)
@@ -102,6 +110,8 @@ export function CartDialog() {
     
     // Store selected items in localStorage
     localStorage.setItem('checkoutItems', JSON.stringify(selectedProducts));
+    // Keep cart intact until order succeeds; just clear selection
+    setSelectedItems([]);
     
     setOpen(false);
     navigate('/checkout');
@@ -333,11 +343,11 @@ export function CartDialog() {
             type="button" 
             onClick={handleCheckout} 
             className="w-full md:w-auto"
-            disabled={cartItems.length === 0 || selectedItems.length === 0}
+            disabled={cartItems.length === 0 || selectedItems.length === 0 || !currentUser}
           >
             Proceed to Checkout
           </Button>
-        </DialogFooter>
+        </DialogFooter>        
       </DialogContent>
     </Dialog>
   );

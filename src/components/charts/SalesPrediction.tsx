@@ -498,7 +498,7 @@ export function SalesPrediction() {
                     angle={-45}
                     textAnchor="end"
                     height={80}
-                    interval={isMobile ? 2 : 0}
+                    interval={2}
                     tick={{ fontSize: isMobile ? 10 : 12 }}
                   />
                   <YAxis 

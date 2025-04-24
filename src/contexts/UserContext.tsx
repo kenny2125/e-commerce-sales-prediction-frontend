@@ -15,6 +15,7 @@ interface UserContextType {
   currentUser: User | null;
   isLoggedIn: boolean;
   isLoading: boolean;
+  isInitialized: boolean; // Add this flag to track initialization
   error: string | null;
   login: (credential: string, password: string) => Promise<void>;
   register: (userData: RegistrationData) => Promise<void>;
@@ -55,6 +56,7 @@ export function UserProvider({ children }: UserProviderProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false); // Add initialization state
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
@@ -86,6 +88,8 @@ export function UserProvider({ children }: UserProviderProps) {
         logoutTimer = window.setTimeout(() => logout(), timeout);
       }
     }
+
+    setIsInitialized(true); // Mark as initialized
 
     return () => {
       if (logoutTimer) {
@@ -199,6 +203,7 @@ export function UserProvider({ children }: UserProviderProps) {
         currentUser, 
         isLoggedIn, 
         isLoading,
+        isInitialized, // Provide initialization state
         error,
         login,
         register,
