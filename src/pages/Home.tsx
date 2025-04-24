@@ -5,6 +5,12 @@ import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 
+// Import images from assets
+import homepage1 from "@/assets/homepage-1.webp";
+import homepage2 from "@/assets/homepage-2.webp";
+import homepage3 from "@/assets/homepage-3.webp";
+import homepage4 from "@/assets/homepage-4.webp";
+
 interface Product {
   product_id: string;
   category: string;
@@ -57,7 +63,7 @@ function Home() {
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: "url('/src/assets/office-supplies-bg.jpg')",
+            backgroundImage: `url(${homepage1})`,
           }}
         ></div>
         <div className="relative z-20 text-center text-white px-4">
@@ -89,7 +95,7 @@ function Home() {
         <div className="mb-12">
           <div className="relative h-[300px] overflow-hidden">
             <img
-              src="/src/assets/office-supplies-category.jpg"
+              src={homepage2}
               alt="Office & School Supplies"
               className="w-full h-full object-cover"
             />
@@ -106,7 +112,7 @@ function Home() {
           {/* Furniture Category */}
           <div className="relative h-[250px] overflow-hidden">
             <img
-              src="/src/assets/furniture-category.jpg"
+              src={homepage3}
               alt="Furniture"
               className="w-full h-full object-cover"
             />
@@ -118,7 +124,7 @@ function Home() {
           {/* Technology Category */}
           <div className="relative h-[250px] overflow-hidden">
             <img
-              src="/src/assets/technology-category.jpg"
+              src={homepage4}
               alt="Technology"
               className="w-full h-full object-cover"
             />
@@ -135,32 +141,31 @@ function Home() {
 
         {loading ? (
           <div className="flex items-center justify-center w-full py-8">
-        Loading products...
+            Loading products...
           </div>
         ) : featuredProducts.length > 0 ? (
           <>
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          {featuredProducts.map((product) => (
-            <ProductCard key={product.product_id} product={product} />
-          ))}
-        </div>
-        <div className="flex justify-center mt-8">
-          <Button
-            onClick={() => (window.location.href = "/search")}
-            className="flex items-center"
-          >
-            See More
-            <CircleArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.product_id} product={product} />
+              ))}
+            </div>
+            <div className="flex justify-center mt-8">
+              <Button
+                onClick={() => (window.location.href = "/search")}
+                className="flex items-center"
+              >
+                See More
+                <CircleArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
           </>
         ) : (
           <div className="flex items-center justify-center w-full py-8">
-        No products available
+            No products available
           </div>
         )}
       </section>
-
     </main>
   );
 }
