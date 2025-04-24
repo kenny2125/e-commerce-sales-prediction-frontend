@@ -213,42 +213,90 @@ export function Orders() {
   const columns: ColumnDef<Orders>[] = [
     {
       accessorKey: "orderID",
-      header: "Order ID",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Order ID
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => (
         <div className="capitalize">{row.getValue("orderID")}</div>
       ),
     },
     {
       accessorKey: "paymentStatus",
-      header: "Payment Status",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Payment Status
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => (
         <div>{getPaymentStatusBadge(row.getValue("paymentStatus"))}</div>
       ),
     },
     {
       accessorKey: "pickupStatus",
-      header: "Pickup Status",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Pickup Status
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => (
         <div>{getPickupStatusBadge(row.getValue("pickupStatus"))}</div>
       ),
     },
     {
       accessorKey: "customerName",
-      header: "Customer Name",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Customer Name
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => (
         <div className="capitalize">{row.getValue("customerName")}</div>
       ),
     },
     {
       accessorKey: "orderDate",
-      header: "Order Date",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Order Date
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => (
         <div>{formatDate(row.getValue("orderDate"))}</div>
       ),
     },
     {
       accessorKey: "purchasedProduct",
-      header: "Purchased Products",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Purchased Products
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => (
         <div className="capitalize max-w-[200px] truncate" title={row.getValue("purchasedProduct")}>
           {row.getValue("purchasedProduct")}
@@ -257,7 +305,16 @@ export function Orders() {
     },
     {
       accessorKey: "totalAmount",
-      header: () => <div className="text-right">Total Amount</div>,
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="w-full justify-end"
+        >
+          Total Amount
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => {
         const amount = parseFloat(row.getValue("totalAmount"))
         const formatted = new Intl.NumberFormat("en-PH", {
