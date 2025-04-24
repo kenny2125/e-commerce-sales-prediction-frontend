@@ -76,12 +76,12 @@ const CheckoutDialog = ({
             {isSuccessful ? (
               <>
                 <CheckCircle2 className="h-6 w-6 text-green-500" />
-                Order Successful
+                Invoice Sent Successfully
               </>
             ) : (
               <>
                 <XCircle className="h-6 w-6 text-red-500" />
-                Order Failed
+                Invoice Failed
               </>
             )}
           </DialogTitle>
@@ -89,11 +89,11 @@ const CheckoutDialog = ({
         
         {isSuccessful ? (
           <div className="flex flex-col gap-4">
-            <p>Thank you for your order! Here are your order details:</p>
+            <p>Thank you! Your invoice has been sent successfully. Here are the details:</p>
             
             <div className="bg-muted p-4 rounded-lg">
               <div className="grid grid-cols-2 gap-2">
-                <span className="font-medium">Order Number:</span>
+                <span className="font-medium">Invoice Number:</span>
                 <span>{orderNumber}</span>
                 
                 <span className="font-medium">Payment Method:</span>
@@ -112,12 +112,12 @@ const CheckoutDialog = ({
             
             <p className="text-sm text-muted-foreground">
               {pickupMethod === 'store' 
-                ? 'Please proceed to our store with your order number for pickup.'
+                ? 'Please proceed to our store with your invoice number for pickup.'
                 : 'We will process your delivery and contact you for shipping details.'}
             </p>
           </div>
         ) : (
-          <p>There was an error processing your order. Please try again.</p>
+          <p>There was an error sending your invoice. Please try again.</p>
         )}
 
         <div className="flex justify-end mt-4">

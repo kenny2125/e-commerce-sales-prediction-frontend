@@ -169,7 +169,7 @@ export function CartDialog() {
             <DialogTitle>My Cart</DialogTitle>
           </div>
           <DialogDescription>
-            Review your cart items before proceeding to checkout.
+            Review your cart items before proceeding to create an invoice.
           </DialogDescription>
         </DialogHeader>
         
@@ -345,7 +345,7 @@ export function CartDialog() {
             className="w-full md:w-auto"
             disabled={cartItems.length === 0 || selectedItems.length === 0 || !currentUser}
           >
-            Proceed to Checkout
+            Proceed to Invoice
           </Button>
         </DialogFooter>        
       </DialogContent>

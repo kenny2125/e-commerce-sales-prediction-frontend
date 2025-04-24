@@ -20,6 +20,7 @@ interface Product {
   product_name: string;
   store_price: number;
   image_url: string;
+  quantity: number;
 }
 
 export default function Search() {

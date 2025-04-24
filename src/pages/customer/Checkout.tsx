@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { QuantityInput } from "@/components/ui/quantity-input";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import CheckoutDialog from "../../components/dialogs/CheckoutDialog";
 
 interface CartItem {
@@ -257,10 +258,11 @@ const Checkout = () => {
           </div>
           <div className="flex flex-col gap-2 mt-4">
             <Label>Purpose</Label>
-            <Input
+            <Textarea
               placeholder="Enter order purpose"
               value={purpose}
               onChange={e => setPurpose(e.target.value)}
+              className="min-h-[80px]"
             />
           </div>
           <div className="flex flex-col md:flex-row gap-4 md:gap-8 justify-between">
@@ -297,7 +299,7 @@ const Checkout = () => {
               </div>
             )}
             <span className={isProcessing ? "opacity-0" : "opacity-100"}>
-              Place Order
+              Send Invoice
             </span>
           </Button>
         </div>

@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { OrderDetailDialog, OrderDetail } from "@/components/dialogs/OrderDetailDialog";
+import { AddOrderDialog } from "@/components/dialogs/AddOrderDialog";
 import { Badge } from "@/components/ui/badge";
 
 export type Orders = {
@@ -65,6 +66,7 @@ export function Orders() {
   const [selectedOrder, setSelectedOrder] = React.useState<OrderDetail | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = React.useState(false);
   const [detailLoading, setDetailLoading] = React.useState(false);
+  const [addOrderDialogOpen, setAddOrderDialogOpen] = React.useState(false);
 
   const formatCurrency = (value?: number | null) => {
     if (value == null) return 'PHP 0.00'
@@ -123,43 +125,45 @@ export function Orders() {
     return <Badge variant="outline" className={className}>{status}</Badge>;
   };
 
-  // Fetch orders
-  React.useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const token = localStorage.getItem('token')
-        if (!token) {
-          throw new Error('No authentication token found')
-        }
-
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          console.error('Failed to fetch orders:', {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorData
-          })
-          throw new Error('Failed to fetch orders')
-        }
-
-        const data = await response.json()
-        setOrders(data)
-      } catch (error) {
-        console.error('Error fetching orders:', error)
-        toast.error('Failed to fetch orders')
-      } finally {
-        setLoading(false)
+  // Fetch orders function
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        throw new Error('No authentication token found')
       }
-    }
 
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Failed to fetch orders:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        })
+        throw new Error('Failed to fetch orders')
+      }
+
+      const data = await response.json()
+      setOrders(data)
+    } catch (error) {
+      console.error('Error fetching orders:', error)
+      toast.error('Failed to fetch orders')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch orders on component mount
+  React.useEffect(() => {
     fetchOrders()
   }, [])
 
@@ -304,7 +308,7 @@ export function Orders() {
           </div>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-        <Button>Add Order</Button>
+        <Button onClick={() => setAddOrderDialogOpen(true)}>Add Order</Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full sm:w-auto">
@@ -446,6 +450,13 @@ export function Orders() {
         </div>
       </div>
 
+      {/* Add Order Dialog */}
+      <AddOrderDialog 
+        open={addOrderDialogOpen}
+        onOpenChange={setAddOrderDialogOpen}
+        onOrderAdded={fetchOrders}
+      />
+      
       {/* Order Detail Dialog */}
       {selectedOrder && (
         <OrderDetailDialog
