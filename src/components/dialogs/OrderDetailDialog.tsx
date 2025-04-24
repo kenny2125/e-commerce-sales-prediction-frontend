@@ -5,14 +5,13 @@ import { toast } from 'sonner';
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -35,6 +34,9 @@ export interface OrderDetail {
   customerName: string;
   orderDate: string;
   totalAmount: number;
+  address: string;
+  contactNumber: string;
+  notes?: string;
   items: OrderItem[];
 }
 
@@ -122,133 +124,140 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-screen max-w-[95vw] min-w-[800px] p-0 gap-0">
-        <DialogHeader className="p-6 pb-2">
-          <DialogTitle className="text-xl">Order Details - {order.orderID}</DialogTitle>
-        </DialogHeader>
-        
-        <div className="p-6 pt-2 printable-area">
-          <div className="grid grid-cols-3 gap-6">
-            {/* Left: Order Summary Card */}
-            <Card className="col-span-1">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Order Information</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <dl className="divide-y">
-                  <div className="grid grid-cols-2 py-3">
-                    <dt className="font-medium">Customer</dt>
-                    <dd>{order.customerName}</dd>
-                  </div>
-                  <div className="grid grid-cols-2 py-3">
-                    <dt className="font-medium">Date</dt>
-                    <dd>{formatDate(order.orderDate)}</dd>
-                  </div>
-                  <div className="grid grid-cols-2 py-3">
-                    <dt className="font-medium">Payment Status</dt>
-                    <dd>
-                      <Select 
-                        defaultValue={paymentStatus}
-                        onValueChange={(value) => handleUpdateStatus('paymentStatus', value)}
-                        disabled={updatingStatus}
-                      >
-                        <SelectTrigger className={`w-full h-9 ${getPaymentStatusColor(paymentStatus)}`}>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Processing" className="bg-yellow-500 text-white my-1">
-                            Processing
-                          </SelectItem>
-                          <SelectItem value="Paid" className="bg-green-500 text-white my-1">
-                            Paid
-                          </SelectItem>
-                          <SelectItem value="Cancelled" className="bg-red-500 text-white my-1">
-                            Cancelled
-                          </SelectItem>
-                          <SelectItem value="Refunded" className="bg-purple-500 text-white my-1">
-                            Refunded
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </dd>
-                  </div>
-                  <div className="grid grid-cols-2 py-3">
-                    <dt className="font-medium">Pickup Status</dt>
-                    <dd>
-                      <Select 
-                        defaultValue={pickupStatus}
-                        onValueChange={(value) => handleUpdateStatus('pickupStatus', value)}
-                        disabled={updatingStatus}
-                      >
-                        <SelectTrigger className={`w-full h-9 ${getPickupStatusColor(pickupStatus)}`}>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Ready to Claim" className="bg-blue-500 text-white my-1">
-                            Ready to Claim
-                          </SelectItem>
-                          <SelectItem value="Claimed" className="bg-green-500 text-white my-1">
-                            Claimed
-                          </SelectItem>
-                          <SelectItem value="Cancelled" className="bg-red-500 text-white my-1">
-                            Cancelled
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </dd>
-                  </div>
-                </dl>
-              </CardContent>
-            </Card>
-
-            {/* Right: Items Table */}
-            <div className="col-span-2">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Order Items</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[400px]">Product</TableHead>
-                        <TableHead className="text-right">Quantity</TableHead>
-                        <TableHead className="text-right">Price</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {order.items.map((item) => {
-                        const lineTotal = item.quantity * item.price_at_time;
-                        return (
-                          <TableRow key={item.product_id}>
-                            <TableCell>{item.product_name}</TableCell>
-                            <TableCell className="text-right">{item.quantity}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(item.price_at_time)}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(lineTotal)}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                    <TableFooter>
-                      <TableRow>
-                        <TableCell colSpan={3} className="font-medium">Grand Total</TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatCurrency(order.items.reduce((sum, i) => sum + i.quantity * i.price_at_time, 0))}
-                        </TableCell>
-                      </TableRow>
-                    </TableFooter>
-                  </Table>
+      <DialogContent className="p-0 gap-0 max-w-[98vw] min-w-[1200px] h-[90vh]">
+        <div className="flex flex-col h-full overflow-hidden">
+          <DialogHeader className="p-5 pb-2 border-b">
+            <DialogTitle className="text-2xl font-bold">Order #{order.orderID}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-auto px-6">
+            <div className="grid grid-cols-12 gap-8 py-5">
+              {/* Order Information */}
+              <Card className="col-span-4 border-0 shadow-none">
+                <CardContent className="pt-3">
+                  <h2 className="text-xl font-bold mb-4">Order Information</h2>
+                  <dl className="space-y-4">
+                    <div className="grid grid-cols-2 py-2">
+                      <dt className="font-medium text-gray-600 dark:text-gray-300">Customer:</dt>
+                      <dd className="font-semibold">{order.customerName}</dd>
+                    </div>
+                    <div className="grid grid-cols-2 py-2">
+                      <dt className="font-medium text-gray-600 dark:text-gray-300">Date:</dt>
+                      <dd className="font-semibold">{formatDate(order.orderDate)}</dd>
+                    </div>
+                    <div className="grid grid-cols-2 py-2">
+                      <dt className="font-medium text-gray-600 dark:text-gray-300">Address:</dt>
+                      <dd className="font-semibold">{order.address}</dd>
+                    </div>
+                    <div className="grid grid-cols-2 py-2">
+                      <dt className="font-medium text-gray-600 dark:text-gray-300">Contact Number:</dt>
+                      <dd className="font-semibold">{order.contactNumber}</dd>
+                    </div>
+                    {order.notes && (
+                      <div className="grid grid-cols-2 py-2">
+                        <dt className="font-medium text-gray-600 dark:text-gray-300">Notes:</dt>
+                        <dd className="font-semibold whitespace-pre-wrap">{order.notes}</dd>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 py-2">
+                      <dt className="font-medium text-gray-600 dark:text-gray-300">Payment Status:</dt>
+                      <dd>
+                        <Select 
+                          defaultValue={paymentStatus}
+                          onValueChange={(value) => handleUpdateStatus('paymentStatus', value)}
+                          disabled={updatingStatus}
+                        >
+                          <SelectTrigger className={`w-full h-9 ${getPaymentStatusColor(paymentStatus)}`}>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Processing" className="bg-yellow-500 text-white my-1">
+                              Processing
+                            </SelectItem>
+                            <SelectItem value="Paid" className="bg-green-500 text-white my-1">
+                              Paid
+                            </SelectItem>
+                            <SelectItem value="Cancelled" className="bg-red-500 text-white my-1">
+                              Cancelled
+                            </SelectItem>
+                            <SelectItem value="Refunded" className="bg-purple-500 text-white my-1">
+                              Refunded
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </dd>
+                    </div>
+                    <div className="grid grid-cols-2 py-2">
+                      <dt className="font-medium text-gray-600 dark:text-gray-300">Pickup Status:</dt>
+                      <dd>
+                        <Select 
+                          defaultValue={pickupStatus}
+                          onValueChange={(value) => handleUpdateStatus('pickupStatus', value)}
+                          disabled={updatingStatus}
+                        >
+                          <SelectTrigger className={`w-full h-9 ${getPickupStatusColor(pickupStatus)}`}>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Ready to Claim" className="bg-blue-500 text-white my-1">
+                              Ready to Claim
+                            </SelectItem>
+                            <SelectItem value="Claimed" className="bg-green-500 text-white my-1">
+                              Claimed
+                            </SelectItem>
+                            <SelectItem value="Cancelled" className="bg-red-500 text-white my-1">
+                              Cancelled
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </dd>
+                    </div>
+                  </dl>
                 </CardContent>
               </Card>
+
+              {/* Order Items */}
+              <div className="col-span-8">
+                <h2 className="text-xl font-bold mb-4">Order Items</h2>
+                <Table className="border rounded-md">
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="w-[50%]">Product</TableHead>
+                      <TableHead className="text-right">Quantity</TableHead>
+                      <TableHead className="text-right">Price</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {order.items.map((item) => {
+                      const lineTotal = item.quantity * item.price_at_time;
+                      return (
+                        <TableRow key={item.product_id}>
+                          <TableCell className="font-medium">{item.product_name}</TableCell>
+                          <TableCell className="text-right">{item.quantity}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(item.price_at_time)}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(lineTotal)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell colSpan={3} className="font-semibold">Grand Total</TableCell>
+                      <TableCell className="text-right font-semibold text-lg">
+                        {formatCurrency(order.items.reduce((sum, i) => sum + i.quantity * i.price_at_time, 0))}
+                      </TableCell>
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              </div>
             </div>
           </div>
+          
+          <DialogFooter className="p-5 py-3 border-t mt-auto">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+          </DialogFooter>
         </div>
-        
-        <DialogFooter className="px-6 py-4 border-t">
-          <Button onClick={() => window.print()}>Print</Button>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

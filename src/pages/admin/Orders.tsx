@@ -246,7 +246,9 @@ export function Orders() {
       accessorKey: "purchasedProduct",
       header: "Purchased Products",
       cell: ({ row }) => (
-        <div className="capitalize">{row.getValue("purchasedProduct")}</div>
+        <div className="capitalize max-w-[200px] truncate" title={row.getValue("purchasedProduct")}>
+          {row.getValue("purchasedProduct")}
+        </div>
       ),
     },
     {
