@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { Printer } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -50,6 +51,7 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
   const [updatingStatus, setUpdatingStatus] = React.useState(false);
   const [paymentStatus, setPaymentStatus] = React.useState(order.paymentStatus);
   const [pickupStatus, setPickupStatus] = React.useState(order.pickupStatus);
+  const printContentRef = useRef<HTMLDivElement>(null);
 
   const formatCurrency = (value?: number) => {
     if (value == null) return 'PHP 0.00';
@@ -120,6 +122,152 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
     } finally {
       setUpdatingStatus(false);
     }
+  };
+
+  const handlePrint = () => {
+    // Create a hidden iframe for printing
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+    
+    // Calculate the grand total
+    const grandTotal = order.items.reduce((sum, i) => sum + i.quantity * i.price_at_time, 0);
+
+    // Generate print-friendly HTML content
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Order #${order.orderID} - Receipt</title>
+        <meta charset="UTF-8">
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+          }
+          .order-info {
+            margin-bottom: 20px;
+          }
+          .order-info div {
+            margin-bottom: 5px;
+          }
+          .label {
+            font-weight: bold;
+            display: inline-block;
+            width: 150px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+          }
+          th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+          }
+          .text-right {
+            text-align: right;
+          }
+          .total-row {
+            font-weight: bold;
+            font-size: 1.1em;
+          }
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+          }
+          @media print {
+            @page { margin: 0.5cm; }
+            body { font-size: 12pt; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>1618 Office Solutions</h1>
+          <h2>Order Receipt</h2>
+        </div>
+        
+        <div class="order-info">
+          <h3>Order #${order.orderID}</h3>
+          <div><span class="label">Date:</span> ${formatDate(order.orderDate)}</div>
+          <div><span class="label">Customer:</span> ${order.customerName}</div>
+          <div><span class="label">Address:</span> ${order.address}</div>
+          <div><span class="label">Contact:</span> ${order.contactNumber}</div>
+          <div><span class="label">Payment Status:</span> ${paymentStatus}</div>
+          <div><span class="label">Pickup Status:</span> ${pickupStatus}</div>
+          ${order.notes ? `<div><span class="label">Notes:</span> ${order.notes}</div>` : ''}
+        </div>
+        
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 50%">Product</th>
+              <th class="text-right">Quantity</th>
+              <th class="text-right">Price</th>
+              <th class="text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${order.items.map(item => `
+              <tr>
+                <td>${item.product_name}</td>
+                <td class="text-right">${item.quantity}</td>
+                <td class="text-right">${formatCurrency(item.price_at_time)}</td>
+                <td class="text-right">${formatCurrency(item.quantity * item.price_at_time)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td colspan="3" class="text-right">Grand Total:</td>
+              <td class="text-right">${formatCurrency(grandTotal)}</td>
+            </tr>
+          </tfoot>
+        </table>
+        
+        <div class="footer">
+          <p>Thank you for your business!</p>
+          <p>Receipt generated on ${new Date().toLocaleString()}</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Write to the iframe and trigger printing
+    if (iframe.contentWindow) {
+      iframe.contentWindow.document.open();
+      iframe.contentWindow.document.write(printContent);
+      iframe.contentWindow.document.close();
+      
+      // Wait for content to load, then print
+      setTimeout(() => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        
+        // Remove the iframe after printing
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 1000);
+      }, 500);
+    }
+    
+    toast.success('Printing order...');
   };
 
   return (
@@ -255,6 +403,14 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
           </div>
           
           <DialogFooter className="p-5 py-3 border-t mt-auto">
+            <Button 
+              variant="outline" 
+              onClick={handlePrint}
+              className="flex items-center gap-2"
+            >
+              <Printer size={16} />
+              Print Order
+            </Button>
             <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
           </DialogFooter>
         </div>
