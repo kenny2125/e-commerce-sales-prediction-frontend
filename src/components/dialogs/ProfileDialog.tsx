@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type UserRole = "guest" | "customer" | "admin";
 
@@ -281,14 +282,17 @@ export function ProfileDialog() {
     }
   };
 
-  if (loading && !currentUser) {
-    return <div>Loading...</div>;
-  }
-
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <UserPen size={40} className="text-primary cursor-pointer" />
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-10 w-10 p-1"
+          aria-label="User profile"
+        >
+          <UserPen className="h-5 w-5 text-primary" />
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[867px] w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -314,14 +318,16 @@ export function ProfileDialog() {
           </div>
         )}
 
-        {currentUser ? (
-          <div className="flex flex-col md:flex-row justify-between gap-8">
-            <div className="flex flex-col align-top py-4 w-full gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-4">
-                <Label htmlFor="first_name" className="text-right">
-                  First Name
-                </Label>
-                <div className="col-span-3">
+        <div className="flex flex-col md:flex-row justify-between gap-8">
+          <div className="flex flex-col align-top py-4 w-full gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-4">
+              <Label htmlFor="first_name" className="text-right">
+                First Name
+              </Label>
+              <div className="col-span-3">
+                {loading && !currentUser ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : (
                   <Input 
                     id="first_name" 
                     value={formData.first_name} 
@@ -331,16 +337,20 @@ export function ProfileDialog() {
                     className={`${errors.first_name && touched.first_name ? "border-red-500" : ""}`}
                     disabled={!editing} 
                   />
-                  {editing && errors.first_name && touched.first_name && (
-                    <p className="text-xs text-red-500 mt-1">{errors.first_name}</p>
-                  )}
-                </div>
+                )}
+                {editing && errors.first_name && touched.first_name && (
+                  <p className="text-xs text-red-500 mt-1">{errors.first_name}</p>
+                )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-4">
-                <Label htmlFor="last_name" className="text-right">
-                  Last Name
-                </Label>
-                <div className="col-span-3">
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-4">
+              <Label htmlFor="last_name" className="text-right">
+                Last Name
+              </Label>
+              <div className="col-span-3">
+                {loading && !currentUser ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : (
                   <Input 
                     id="last_name" 
                     value={formData.last_name} 
@@ -350,16 +360,20 @@ export function ProfileDialog() {
                     className={`${errors.last_name && touched.last_name ? "border-red-500" : ""}`}
                     disabled={!editing} 
                   />
-                  {editing && errors.last_name && touched.last_name && (
-                    <p className="text-xs text-red-500 mt-1">{errors.last_name}</p>
-                  )}
-                </div>
+                )}
+                {editing && errors.last_name && touched.last_name && (
+                  <p className="text-xs text-red-500 mt-1">{errors.last_name}</p>
+                )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-4">
-                <Label htmlFor="email" className="text-right">
-                  Email
-                </Label>
-                <div className="col-span-3">
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">
+                Email
+              </Label>
+              <div className="col-span-3">
+                {loading && !currentUser ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : (
                   <Input 
                     id="email" 
                     type="email"
@@ -369,16 +383,20 @@ export function ProfileDialog() {
                     className={`${errors.email && touched.email ? "border-red-500" : ""}`}
                     disabled={!editing} 
                   />
-                  {editing && errors.email && touched.email && (
-                    <p className="text-xs text-red-500 mt-1">{errors.email}</p>
-                  )}
-                </div>
+                )}
+                {editing && errors.email && touched.email && (
+                  <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+                )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-4">
-                <Label htmlFor="username" className="text-right">
-                  Username
-                </Label>
-                <div className="col-span-3">
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-4">
+              <Label htmlFor="username" className="text-right">
+                Username
+              </Label>
+              <div className="col-span-3">
+                {loading && !currentUser ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : (
                   <Input 
                     id="username" 
                     value={formData.username} 
@@ -388,19 +406,23 @@ export function ProfileDialog() {
                     className={`${errors.username && touched.username ? "border-red-500" : ""}`}
                     disabled={!editing} 
                   />
-                  {editing && errors.username && touched.username && (
-                    <p className="text-xs text-red-500 mt-1">{errors.username}</p>
-                  )}
-                </div>
+                )}
+                {editing && errors.username && touched.username && (
+                  <p className="text-xs text-red-500 mt-1">{errors.username}</p>
+                )}
               </div>
             </div>
+          </div>
 
-            <div className="flex flex-col align-top py-4 w-full gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-4">
-                <Label htmlFor="address" className="text-right">
-                  Address
-                </Label>
-                <div className="col-span-3">
+          <div className="flex flex-col align-top py-4 w-full gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-4">
+              <Label htmlFor="address" className="text-right">
+                Address
+              </Label>
+              <div className="col-span-3">
+                {loading && !currentUser ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : (
                   <Input 
                     id="address" 
                     value={formData.address} 
@@ -410,16 +432,20 @@ export function ProfileDialog() {
                     className={`${errors.address && touched.address ? "border-red-500" : ""}`}
                     disabled={!editing} 
                   />
-                  {editing && errors.address && touched.address && (
-                    <p className="text-xs text-red-500 mt-1">{errors.address}</p>
-                  )}
-                </div>
+                )}
+                {editing && errors.address && touched.address && (
+                  <p className="text-xs text-red-500 mt-1">{errors.address}</p>
+                )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-4">
-                <Label htmlFor="phone" className="text-right">
-                  Phone
-                </Label>
-                <div className="col-span-3">
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-4">
+              <Label htmlFor="phone" className="text-right">
+                Phone
+              </Label>
+              <div className="col-span-3">
+                {loading && !currentUser ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : (
                   <Input 
                     id="phone" 
                     type="tel"
@@ -430,20 +456,20 @@ export function ProfileDialog() {
                     className={`${errors.phone && touched.phone ? "border-red-500" : ""}`}
                     disabled={!editing} 
                   />
-                  {editing && errors.phone && touched.phone && (
-                    <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
-                  )}
-                </div>
+                )}
+                {editing && errors.phone && touched.phone && (
+                  <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
+                )}
               </div>
             </div>
           </div>
-        ) : (
-          <div>No user data available.</div>
-        )}
+        </div>
         
         <DialogFooter>
           <div className="flex gap-2">
-            {editing ? (
+            {loading && !currentUser ? (
+              <Skeleton className="h-10 w-24" />
+            ) : editing ? (
               <>
                 <Button type="button" onClick={handleSave} disabled={loading} className="relative">
                   {loading && (

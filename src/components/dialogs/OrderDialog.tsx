@@ -168,7 +168,14 @@ export function OrderDialog() {
       }}
     >
       <DialogTrigger asChild>
-        <ScrollText size={40} className="text-primary cursor-pointer" />
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-10 w-10 p-1"
+          aria-label="View order history"
+        >
+          <ScrollText className="h-4 w-4 text-primary" />
+        </Button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-[90vw] md:max-w-[95vw] lg:max-w-[90vw] xl:max-w-7xl max-h-[90vh] p-0 flex flex-col">

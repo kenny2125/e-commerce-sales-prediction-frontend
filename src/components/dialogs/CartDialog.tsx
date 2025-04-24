@@ -159,7 +159,14 @@ export function CartDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <ShoppingCart size={40} className="text-primary cursor-pointer" />
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-10 w-10 p-1"
+          aria-label="Shopping cart"
+        >
+          <ShoppingCart className="h-5 w-5 text-primary" />
+        </Button>
       </DialogTrigger>
 
       <DialogContent className="flex flex-col sm:max-w-[1000px] min-h-[577px] max-h-[90vh] overflow-y-auto">
