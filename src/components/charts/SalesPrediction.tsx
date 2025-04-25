@@ -17,6 +17,9 @@ import { useMediaQuery } from "@/hooks/use-media-query"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
 import {
   ChartConfig,
   ChartContainer,
@@ -72,8 +75,11 @@ export function SalesPrediction() {
   const [isPredicting, setIsPredicting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [monthsAhead, setMonthsAhead] = useState(6);
-  const [maxDataPoints, setMaxDataPoints] = useState(24); // Default value of 32
+  const [maxDataPoints, setMaxDataPoints] = useState(24); // Default value of 24
   const [activeTab, setActiveTab] = useState("stacked");
+  const [forceTraining, setForceTraining] = useState(false);
+  const [savedModels, setSavedModels] = useState<any[]>([]);
+  const [modelInfo, setModelInfo] = useState<any>(null);
   
   // Additional data from enhanced prediction endpoint
   const [rawData, setRawData] = useState<any[]>([]);
@@ -142,6 +148,26 @@ export function SalesPrediction() {
     fetchAllMonthlySales();
   }, []);
 
+  // Load available models when component mounts
+  useEffect(() => {
+    const fetchSavedModels = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/predictions/models`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch saved models');
+        }
+        const data = await response.json();
+        if (data.success && data.models) {
+          setSavedModels(data.models);
+        }
+      } catch (err) {
+        console.error('Error fetching saved models:', err);
+      }
+    };
+
+    fetchSavedModels();
+  }, []);
+
   // Function to predict future sales using SSE
   const predictFutureSales = async () => {
     try {
@@ -155,14 +181,23 @@ export function SalesPrediction() {
       setTrainingProgress(null);
       setValidationMetrics(null);
       
-      // Updated URL to include both months_ahead and max_data_points parameters
-      const url = `${import.meta.env.VITE_API_URL}/api/predictions/sales?months_ahead=${monthsAhead}&max_data_points=${maxDataPoints}`;
+      // Updated URL to include force_training parameter
+      const url = `${import.meta.env.VITE_API_URL}/api/predictions/sales?months_ahead=${monthsAhead}&max_data_points=${maxDataPoints}&force_training=${forceTraining}`;
       eventSourceRef.current = new EventSource(url);
       
       eventSourceRef.current.onmessage = (event) => {
         const data = JSON.parse(event.data);
         
         switch (data.type) {
+          case 'model-loaded':
+            // Set model info when a saved model is loaded
+            setModelInfo({
+              source: 'loaded-from-file',
+              message: data.message,
+              ...data.metadata
+            });
+            break;
+            
           case 'progress':
             setTrainingProgress({
               iterations: data.iterations,
@@ -213,6 +248,11 @@ export function SalesPrediction() {
           case 'complete':
             // Store prediction data
             setPredictionData(data.predictions);
+            
+            // Store model info if available
+            if (data.model_info) {
+              setModelInfo(data.model_info);
+            }
             
             // Store additional data if available
             if (data.raw_data) setRawData(data.raw_data);
@@ -406,6 +446,14 @@ export function SalesPrediction() {
                   className="px-2 py-1 border rounded w-full md:w-16 h-9"
                 />
               </label>
+            </div>
+            <div className="flex items-center space-x-2 mr-2">
+              <Switch 
+                id="force-training" 
+                checked={forceTraining}
+                onCheckedChange={setForceTraining}
+              />
+              <Label htmlFor="force-training" className="text-sm">Force Retraining</Label>
             </div>
             <Button 
               onClick={predictFutureSales} 
@@ -627,6 +675,63 @@ export function SalesPrediction() {
               <div>
                 <p className="text-sm font-medium">Range</p>
                 <p className="text-lg">₱{normalizationParams.range.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Model Information */}
+        {modelInfo && (
+          <div className="mt-4 border rounded-md p-4">
+            <h3 className="font-medium mb-2">Model Information</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-medium">Model Type</p>
+                <p className="text-base">{modelInfo.type || 'GRUTimeStep Neural Network'}</p>
+                
+                <p className="text-sm font-medium mt-2">Source</p>
+                <p className="text-base flex items-center">
+                  {modelInfo.source === 'loaded-from-file' ? (
+                    <>
+                      <span className="inline-block w-2 h-2 mr-2 rounded-full bg-green-500"></span>
+                      Loaded from saved model
+                    </>
+                  ) : (
+                    <>
+                      <span className="inline-block w-2 h-2 mr-2 rounded-full bg-blue-500"></span>
+                      Freshly trained
+                    </>
+                  )}
+                </p>
+                
+                {modelInfo.createdAt && (
+                  <>
+                    <p className="text-sm font-medium mt-2">Created At</p>
+                    <p className="text-base">
+                      {new Date(modelInfo.createdAt.replace(/-/g, ':')).toLocaleString()}
+                    </p>
+                  </>
+                )}
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium">Training Data Points</p>
+                <p className="text-base">{modelInfo.dataPoints || modelInfo.training_data_points || '-'}</p>
+                
+                {modelInfo.lastSalesDate && (
+                  <>
+                    <p className="text-sm font-medium mt-2">Last Sales Date in Model</p>
+                    <p className="text-base">
+                      {new Date(modelInfo.lastSalesDate.year, modelInfo.lastSalesDate.month - 1, 1)
+                        .toLocaleDateString('default', { year: 'numeric', month: 'long' })}
+                    </p>
+                  </>
+                )}
+                
+                <p className="text-sm font-medium mt-2">Final Error</p>
+                <p className="text-base">
+                  {modelInfo.trainingParams?.finalError || modelInfo.final_error || '-'}
+                </p>
               </div>
             </div>
           </div>
