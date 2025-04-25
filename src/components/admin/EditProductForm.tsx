@@ -53,19 +53,6 @@ type ProductVariant = {
   image?: File;
 };
 
-type FormData = {
-  product_id: string;
-  category: string;
-  brand: string;
-  product_name: string;
-  status: "In Stock" | "Out of Stock";
-  quantity: number;
-  store_price: string; // Store as string in form, transform to number on submit
-  image?: FileList;
-  description?: string;
-  variants?: ProductVariant[];
-};
-
 const formSchema = z.object({
   category: z.string().min(2).max(100),
   brand: z.string().min(2).max(100),
@@ -469,30 +456,48 @@ export function EditProductForm({ initialData, onSuccess }: EditProductFormProps
       if (values.image?.[0]) {
         formData.append("image", values.image[0]);
       } 
-      // No need to handle the else case for edit - the backend will keep the existing image if none is sent
 
       // Process variants - Create FormData entries for each variant image
       if (variants.length > 0) {
-        // Store variant images to send to server
+        // Process each variant and prepare it for submission
+        const processedVariants = variants.map((variant) => {
+          // Create a copy to avoid modifying the original
+          const processedVariant = { ...variant };
+          
+          // If this variant has a File object for image
+          if (variant.image instanceof File) {
+            // Mark this variant so backend knows it has an image to process
+            processedVariant.hasImage = true;
+            // Remove the actual File object as it can't be JSON.stringified
+            delete processedVariant.image;
+          }
+          
+          // Ensure correct data types for numeric values
+          if (typeof processedVariant.store_price === 'string') {
+            processedVariant.store_price = Number(processedVariant.store_price.replace(/,/g, ''));
+          }
+          
+          // Ensure quantity is a number
+          processedVariant.quantity = Number(processedVariant.quantity);
+          
+          return processedVariant;
+        });
+        
+        // Append variant images separately
         variants.forEach((variant, index) => {
-          // If this variant has a File object for image, append it to formData
           if (variant.image instanceof File) {
             formData.append(`variantImage_${index}`, variant.image);
-            // Create a temporary variant object without the image File
-            const { image, ...variantWithoutImage } = variant;
-            // Mark this variant so backend knows it has an image to process
-            variantWithoutImage.hasImage = true;
-            // Update the variant in the array
-            variants[index] = variantWithoutImage;
           }
         });
         
-        // Append the updated variants array as JSON
-        formData.append("variants", JSON.stringify(variants));
+        // Append the processed variants array as JSON
+        formData.append("variants", JSON.stringify(processedVariants));
       }
 
       const endpoint = `${import.meta.env.VITE_API_URL}/api/product/${initialData.id}`;
 
+      console.log('Submitting update to:', endpoint);
+      
       const response = await fetch(endpoint, {
         method: "PUT",
         headers: {
@@ -506,6 +511,9 @@ export function EditProductForm({ initialData, onSuccess }: EditProductFormProps
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         throw new Error(`HTTP error! status: ${response.status}, Message: ${errorData.message || 'Failed to process request'}`);
       }
+
+      const updatedProduct = await response.json();
+      console.log('Product updated successfully:', updatedProduct);
 
       setFormMessage({
         type: "success",
@@ -1062,16 +1070,19 @@ export function EditProductForm({ initialData, onSuccess }: EditProductFormProps
           <Button
             type="submit"
             disabled={isSubmitting || formMessage?.type === "success"}
-            className="relative"
+            className="relative w-full sm:w-auto min-w-[150px]"
+            onClick={
+              console.log("Clicked")
+            }
           >
-            {isSubmitting && (
-              <div className="absolute inset-0 flex items-center justify-center bg-opacity-50">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            {isSubmitting ? (
+              <div className="flex items-center justify-center">
+                <div className="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Updating...</span>
               </div>
+            ) : (
+              <span>Update Product</span>
             )}
-            <span className={isSubmitting ? "opacity-0" : "opacity-100"}>
-              Update Product
-            </span>
           </Button>
         </DialogFooter>
       </form>
