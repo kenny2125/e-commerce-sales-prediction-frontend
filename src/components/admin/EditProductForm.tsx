@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/command";
 import { Check, ChevronsUpDown, PlusCircle, XCircle, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Inventory } from "@/components/admin/InventoryColumns"; // Ensure this path is correct
+import type { Inventory } from "@/components/admin/InventoryColumns";
 import { toast } from "sonner";
 import ImagePlaceholder from "@/assets/image-placeholder.webp";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,11 +55,12 @@ const formSchema = {
 };
 
 interface EditProductFormProps {
-  initialData: Inventory;
+  initialData: Inventory | null;
   onSuccess?: () => void;
+  isLoading?: boolean;
 }
 
-export function EditProductForm({ initialData, onSuccess }: EditProductFormProps) {
+export function EditProductForm({ initialData, onSuccess, isLoading = false }: EditProductFormProps) {
   const navigate = useNavigate();
   const [formMessage, setFormMessage] = useState<{
     type: "success" | "error";
@@ -88,13 +89,9 @@ export function EditProductForm({ initialData, onSuccess }: EditProductFormProps
   };
   
   // State for form values
-  const [category, setCategory] = useState(initialData.category);
-  const [brand, setBrand] = useState(initialData.brand);
-  const [productName, setProductName] = useState(initialData.product_name);
-  const [status, setStatus] = useState(initialData.status || "In Stock");
-  const [quantity, setQuantity] = useState(initialData.quantity || 0);
-  const [storePrice, setStorePrice] = useState(formatPrice(initialData.store_price || 0));
-  const [description, setDescription] = useState(initialData.description || '');
+  const [category, setCategory] = useState(initialData?.category || '');
+  const [brand, setBrand] = useState(initialData?.brand || '');
+  const [productName, setProductName] = useState(initialData?.product_name || '');
   
   // State for managing product variants
   const [variants, setVariants] = useState<ProductVariant[]>([]);
@@ -113,6 +110,10 @@ export function EditProductForm({ initialData, onSuccess }: EditProductFormProps
           store_price: formatPrice(variant.store_price), // Format price for display
         }));
         setVariants(formattedVariants);
+        console.log("Loaded variants:", formattedVariants);
+      } else {
+        console.log("No variants found in initialData");
+        setVariants([]);
       }
     }
   }, [initialData]);
@@ -225,13 +226,26 @@ export function EditProductForm({ initialData, onSuccess }: EditProductFormProps
         const previewUrl = URL.createObjectURL(processed);
         setVariantPreviewSrc(previewUrl);
         
-        // Update the editingVariant with the new image File object
-        setEditingVariant(prev => prev ? { ...prev, image: processed } : null);
+        // Convert to base64 for sending to server
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          // Store base64 data URI in the editingVariant for submission
+          setEditingVariant(prev => prev ? { 
+            ...prev, 
+            image: processed,
+            image_data_uri: reader.result as string // Store base64 data URI
+          } : null);
+        };
+        reader.readAsDataURL(processed);
       } else {
         setVariantFileName('');
         setVariantPreviewSrc(editingVariant.image_url || ImagePlaceholder);
         // Remove image File object if file is deselected
-        setEditingVariant(prev => prev ? { ...prev, image: undefined } : null);
+        setEditingVariant(prev => prev ? { 
+          ...prev, 
+          image: undefined,
+          image_data_uri: undefined
+        } : null);
       }
     } catch (error) {
         console.error("Error processing variant image:", error);
@@ -240,7 +254,11 @@ export function EditProductForm({ initialData, onSuccess }: EditProductFormProps
         // Reset image state on error
         setVariantFileName('');
         setVariantPreviewSrc(editingVariant.image_url || ImagePlaceholder);
-        setEditingVariant(prev => prev ? { ...prev, image: undefined } : null);
+        setEditingVariant(prev => prev ? { 
+          ...prev, 
+          image: undefined,
+          image_data_uri: undefined
+        } : null);
     }
   };
 
@@ -381,41 +399,40 @@ export function EditProductForm({ initialData, onSuccess }: EditProductFormProps
     }
   };
 
-  // Watch quantity and update status automatically
-  const watchedQuantity = quantity;
-  useEffect(() => {
-    if (watchedQuantity === 0) {
-      setStatus("Out of Stock");
-    } else if (watchedQuantity <= 10) {
-      setStatus("Low Stock");
-    } else {
-      setStatus("In Stock");
-    }
-  }, [watchedQuantity]);
-
-  // Handler for quantity increment/decrement
-  const handleQuantityChange = (change: number) => {
-    const newQty = Math.max(0, quantity + change);
-    setQuantity(newQty);
-  };
-
   const onSubmit = async (payload: any) => {
     try {
       setIsSubmitting(true);
       setFormMessage(null);
       const token = localStorage.getItem("token");
-      const endpoint = `${import.meta.env.VITE_API_URL}/api/product/${initialData.id}`;
-      const body = JSON.stringify({
-        ...payload,
-        variants: variants.map(v => ({
+      const endpoint = `${import.meta.env.VITE_API_URL}/api/product/${initialData!.id}`;
+      
+      console.log("Preparing variants for submission...");
+      
+      // Format variants for submission - preserve image_data_uri if present
+      const formattedVariants = variants.map(v => {
+        // Get the variant with potential image_data_uri (may be stored in a different property)
+        const variantWithImage = v as any;
+        
+        return {
           id: v.id,
           sku: v.sku,
           variant_name: v.variant_name,
           description: v.description,
-          store_price: parseFloat(String(v.store_price).replace(/,/g, '')),
-          quantity: v.quantity
-        }))
+          store_price: typeof v.store_price === 'string' 
+            ? parseFloat(String(v.store_price).replace(/,/g, '')) 
+            : v.store_price,
+          quantity: v.quantity,
+          image_url: v.image_url,
+          image_data_uri: variantWithImage.image_data_uri // Include base64 image data if available
+        };
       });
+      
+      const body = JSON.stringify({
+        ...payload,
+        variants: formattedVariants
+      });
+      
+      console.log("Submitting update with variants:", formattedVariants.length);
       const response = await fetch(endpoint, {
         method: "PUT",
         headers: {
@@ -425,65 +442,73 @@ export function EditProductForm({ initialData, onSuccess }: EditProductFormProps
         body
       });
 
-      if (!response.ok) throw new Error(`Update failed: ${response.status}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Update failed:", response.status, errorText);
+        throw new Error(`Update failed: ${response.status} - ${errorText}`);
+      }
 
       const updatedProduct = await response.json();
+      console.log("Product updated successfully:", updatedProduct);
       setFormMessage({ type: "success", message: "Product updated successfully!" });
 
-      setTimeout(onSuccess, 1500);
+      if (onSuccess) {
+        setTimeout(onSuccess, 1500);
+      }
     } catch (err: any) {
-      console.error(err);
+      console.error("Error updating product:", err);
       setFormMessage({ type: "error", message: err.message || 'Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
   }
   
-  // Updated onChange handler: Only validates input, does not format
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Allow only digits, commas, and a single decimal point with up to 2 digits
-    if (/^[\d,]*\.?\d{0,2}$/.test(value) || value === "") {
-      // Directly set the potentially unformatted value if it's valid
-      setStorePrice(value);
-    }
-    // If the input is invalid, do nothing (prevents invalid characters)
-  };
-
-  // New onBlur handler: Formats the price when the input loses focus
-  const handlePriceBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (value) {
-      // Remove existing commas for correct parsing
-      const plainNumber = value.replace(/,/g, "");
-      const number = parseFloat(plainNumber);
-      if (!isNaN(number)) {
-        // Format using toLocaleString and update the form state
-        setStorePrice(
-          number.toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })
-        );
-      } else {
-        // Handle cases where the input might be invalid after blur (e.g., just ".")
-        // Optionally clear or reset, here we just format 0.00
-         setStorePrice((0).toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }));
-      }
-    } else {
-        // If the field is empty on blur, set it to formatted zero or keep empty
-         setStorePrice(""); // Or format 0.00 if preferred
-    }
-  };
-
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    const data = { category, brand, product_name: productName, status, quantity, store_price: storePrice, description };
-    await onSubmit(data);
+    // Only include category, brand, and productName
+    const data = { category, brand, product_name: productName };
+    await onSubmit(data); // Note: onSubmit itself still needs adjustment for variants, but this call is simplified
   };
+
+  // Update form values when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setCategory(initialData.category || '');
+      setBrand(initialData.brand || '');
+      setProductName(initialData.product_name || '');
+      setPreviewSrc(initialData.image_url || ImagePlaceholder);
+    }
+  }, [initialData]);
+
+  // Show loading state if product data is being fetched
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full p-8">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-muted-foreground">Loading product details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if no initialData is available after loading
+  if (!initialData && !isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full p-8">
+        <div className="text-center text-red-500">
+          <p>Failed to load product data.</p>
+          <Button 
+            variant="outline" 
+            className="mt-4" 
+            onClick={() => { if (onSuccess) onSuccess(); }}
+          >
+            Close
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmitForm} className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -535,75 +560,16 @@ export function EditProductForm({ initialData, onSuccess }: EditProductFormProps
           />
         </div>
         
-        {/* Status Field */}
-        <div className="flex flex-col">
-          <Label htmlFor="status">Status</Label>
-          <Input 
-            id="status"
-            value={status} 
-            onChange={e => setStatus(e.target.value)}
-            className="w-full"
-            disabled
-          />
-        </div>
+        {/* Remove Status Field */}
         
-        {/* Quantity Field with +/- buttons */}
-        <div className="flex flex-col">
-          <Label htmlFor="quantity">Quantity</Label>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => handleQuantityChange(-1)}
-              disabled={quantity <= 0}
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <Input
-              id="quantity"
-              type="number"
-              value={quantity}
-              onChange={e => setQuantity(Math.max(0, parseInt(e.target.value) || 0))}
-              className="w-16 text-center"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => handleQuantityChange(1)}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        {/* Remove Quantity Field */}
         
-        {/* Store Price Field */}
-        <div className="flex flex-col">
-          <Label htmlFor="store_price">Store Price (PHP)</Label>
-          <Input 
-            id="store_price"
-            value={storePrice} 
-            onChange={handlePriceChange}
-            onBlur={handlePriceBlur}
-            className="w-full"
-          />
-        </div>
+        {/* Remove Store Price Field */}
         
-        {/* Description Field */}
-        <div className="flex flex-col">
-          <Label htmlFor="description">Description</Label>
-          <textarea
-            id="description"
-            value={description} 
-            onChange={e => setDescription(e.target.value)}
-            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            placeholder="Enter product description (optional)"
-          />
-        </div>
+        {/* Remove Description Field */}
       </div>
 
-      {/* Right Column: Product Variants - keep the existing code */}
+      {/* Right Column: Product Variants load the data from product_variant here */}
       <div className="md:col-span-1 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Product Variants</h3>

@@ -199,6 +199,41 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
       const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
       const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
       const [isDeleting, setIsDeleting] = React.useState(false);
+      const [fullProductData, setFullProductData] = React.useState<Inventory | null>(null);
+      const [isLoadingProduct, setIsLoadingProduct] = React.useState(false);
+
+      // Fetch complete product data including variants
+      const fetchFullProductData = async () => {
+        try {
+          setIsLoadingProduct(true);
+          const productId = product.product_id || product.id;
+          const token = localStorage.getItem("token");
+          
+          const response = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/product/${productId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch product details: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log("Fetched full product data with variants:", data);
+          setFullProductData(data);
+          setIsEditDialogOpen(true);
+        } catch (error) {
+          console.error("Error fetching product details:", error);
+          alert("Failed to load product details. Please try again.");
+        } finally {
+          setIsLoadingProduct(false);
+        }
+      };
 
       const handleDelete = async () => {
         try {
@@ -260,7 +295,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
+              <DropdownMenuItem onClick={fetchFullProductData}>
                 Edit Product
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -322,8 +357,9 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
                 </DialogDescription>
               </DialogHeader>
               <EditProductForm // Use EditProductForm directly
-                initialData={product}
+                initialData={fullProductData}
                 onSuccess={handleEditSuccess}
+                isLoading={isLoadingProduct} // Pass loading state to form
               />
             </DialogContent>
           </Dialog>
