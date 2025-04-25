@@ -39,12 +39,29 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { Check, ChevronsUpDown, PlusCircle } from "lucide-react"; // Import icons
+import { Check, ChevronsUpDown, PlusCircle, Trash2, XCircle } from "lucide-react"; // Added trash icons
 import { cn } from "@/lib/utils";
 import type { Inventory } from "@/components/admin/InventoryColumns";
 import ImagePlaceholder from "@/assets/image-placeholder.webp";
 import { Minus, Plus } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+type ProductVariant = {
+  id?: number;
+  sku: string;
+  variant_name: string;
+  description?: string;
+  store_price: number | string;
+  quantity: number;
+  image_url?: string;
+  image?: File;
+};
 
 type FormData = {
   product_id: string;
@@ -55,10 +72,11 @@ type FormData = {
   quantity: number;
   store_price: string; // Store as string in form, transform to number on submit
   image?: FileList;
+  description?: string;
+  variants?: ProductVariant[];
 };
 
 const formSchema = z.object({
-  product_id: z.string().min(2).max(20),
   category: z.string().min(2).max(100),
   brand: z.string().min(2).max(100),
   product_name: z.string().min(2).max(255),
@@ -85,17 +103,25 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   
-  const formatPrice = (price: number | string): string => {
+  // State for managing product variants
+  const [variants, setVariants] = React.useState<ProductVariant[]>([]);
+  const [editingVariant, setEditingVariant] = React.useState<ProductVariant | null>(null);
+  const [showVariantForm, setShowVariantForm] = React.useState(false);
+  const [variantFormError, setVariantFormError] = React.useState<string | null>(null);
+  
+  const formatPrice = (price: number | string | null | undefined): string => {
+    if (price == null || price === '') {
+      return '';
+    }
     if (typeof price === "string") {
-      // Assuming the string is already formatted or needs formatting
-      const number = parseFloat(String(price).replace(/,/g, ''));
-      if (isNaN(number)) return typeof price === 'string' ? price : '0.00'; // Return original string or default if conversion fails
-      return number.toLocaleString("en-US", {
+      const num = parseFloat(price.replace(/,/g, ''));
+      if (isNaN(num)) return '';
+      return num.toLocaleString("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
     }
-    // If it's already a number
+    // Now price is a number
     return price.toLocaleString("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -110,7 +136,6 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
           store_price: formatPrice(initialData.store_price), // Ensure price is formatted correctly
         }
       : {
-          product_id: "",
           category: "",
           brand: "",
           product_name: "",
@@ -120,19 +145,148 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
         },
   });
 
-  // State for tracking product ID uniqueness
-  const [isAutoGenerateSku, setIsAutoGenerateSku] = React.useState(false);
-  const [productIdState, setProductIdState] = React.useState<{
-    isChecking: boolean;
-    isDuplicate: boolean;
-    message: string;
-  }>({
-    isChecking: false,
-    isDuplicate: false,
-    message: "",
-  });
+  // Fetch existing variants when editing a product
+  React.useEffect(() => {
+    if (mode === "edit" && initialData?.id) {
+      // Initialize variants from initial data
+      setVariants(initialData.variants || []);
+    }
+  }, [mode, initialData]);
+  
+  // Handle adding a new variant
+  const handleAddVariant = () => {
+    if (!editingVariant) {
+      // Initialize with empty variant
+      setEditingVariant({
+        sku: "",
+        variant_name: "",
+        store_price: "",
+        quantity: 0
+      });
+    }
+    setShowVariantForm(true);
+    setVariantFormError(null);
+  };
+  
+  // Handle saving a variant
+  const handleSaveVariant = () => {
+    if (!editingVariant) return;
+    
+    // Validate variant
+    if (!editingVariant.sku) {
+      setVariantFormError("SKU is required");
+      return;
+    }
+    
+    if (!editingVariant.variant_name) {
+      setVariantFormError("Variant name is required");
+      return;
+    }
+    
+    if (!editingVariant.store_price) {
+      setVariantFormError("Price is required");
+      return;
+    }
+    
+    // Check for duplicate SKU
+    const duplicateSku = variants.some(
+      v => v.sku === editingVariant.sku && v.id !== editingVariant.id
+    );
+    
+    if (duplicateSku) {
+      setVariantFormError("A variant with this SKU already exists");
+      return;
+    }
+    
+    // Just save the variant with the file for upload to Cloudinary later
+    // DO NOT create blob URLs here as they're not valid for storage
+    let variantToSave = { ...editingVariant };
+    
+    // Add or update variant
+    if (editingVariant.id) {
+      // Update existing variant
+      setVariants(
+        variants.map(v => 
+          v.id === editingVariant.id ? variantToSave : v
+        )
+      );
+    } else {
+      // Add new variant with generated ID
+      setVariants([
+        ...variants,
+        { ...variantToSave, id: Date.now() }
+      ]);
+    }
+    
+    // Reset form
+    setEditingVariant(null);
+    setShowVariantForm(false);
+    setVariantFormError(null);
+    setVariantPreviewSrc(ImagePlaceholder);
+    setVariantFileName('');
+  };
+  
+  // Handle editing a variant
+  const handleEditVariant = (variant: ProductVariant) => {
+    setEditingVariant(variant);
+    setShowVariantForm(true);
+    setVariantFormError(null);
+  };
+  
+  // Handle deleting a variant
+  const handleDeleteVariant = (variantId: number) => {
+    setVariants(variants.filter(v => v.id !== variantId));
+  };
+  
+  // Function to handle variant form field changes
+  const handleVariantChange = (field: keyof ProductVariant, value: any) => {
+    if (!editingVariant) return;
+    
+    setEditingVariant({
+      ...editingVariant,
+      [field]: value
+    });
+  };
 
-  // States for categories and brands
+  // Process and handle variant image
+  const [variantPreviewSrc, setVariantPreviewSrc] = React.useState<string>(ImagePlaceholder);
+  const [variantFileName, setVariantFileName] = React.useState<string>('');
+
+  // Handle variant image change
+  const handleVariantImageChange = async (files: FileList | null) => {
+    if (!editingVariant) return;
+    
+    if (files && files[0]) {
+      const file = files[0];
+      setVariantFileName(file.name);
+      const processed = await processImage(file);
+      const previewUrl = URL.createObjectURL(processed);
+      setVariantPreviewSrc(previewUrl);
+      
+      // Update the editingVariant with the new image
+      setEditingVariant({
+        ...editingVariant,
+        image: processed
+      });
+    } else {
+      setVariantFileName('');
+      setVariantPreviewSrc(editingVariant.image_url || ImagePlaceholder);
+      
+      // Remove image from editingVariant
+      const { image, ...variantWithoutImage } = editingVariant;
+      setEditingVariant(variantWithoutImage);
+    }
+  };
+
+  // Reset variant image preview when editing a new variant
+  React.useEffect(() => {
+    if (editingVariant) {
+      setVariantPreviewSrc(editingVariant.image_url || ImagePlaceholder);
+      setVariantFileName('');
+    }
+  }, [editingVariant]);
+
+  // State for categories and brands
   const [categories, setCategories] = React.useState<string[]>([]);
   const [brands, setBrands] = React.useState<string[]>([]);
   const [isAddingCategory, setIsAddingCategory] = React.useState(false);
@@ -204,42 +358,6 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
     fetchBrands();
   }, []);
 
-  // Function to check if product ID already exists
-  const checkProductIdExists = async (id: string) => {
-    if (!id) return;
-    
-    try {
-      setProductIdState({ isChecking: true, isDuplicate: false, message: "Checking..." });
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/product/${id}`);
-      
-      if (response.ok) {
-        // Product with this ID exists
-        setProductIdState({
-          isChecking: false,
-          isDuplicate: true,
-          message: "Warning: This Product ID already exists!",
-        });
-        return true;
-      } else if (response.status === 404) {
-        // Product ID is available
-        setProductIdState({
-          isChecking: false,
-          isDuplicate: false,
-          message: "Product ID is available",
-        });
-        return false;
-      }
-    } catch (error) {
-      console.error("Error checking product ID:", error);
-      setProductIdState({
-        isChecking: false,
-        isDuplicate: false,
-        message: "Failed to check Product ID",
-      });
-    }
-    return false;
-  };
-
   // Image preview, filename state, and processing handlers
   const [previewSrc, setPreviewSrc] = React.useState<string>(initialData?.image_url || ImagePlaceholder);
   const [selectedFileName, setSelectedFileName] = React.useState<string>(initialData?.image_url ? '' : '');
@@ -304,72 +422,8 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
     form.setValue("quantity", newQty, { shouldValidate: true });
   };
 
-  // Function to generate product ID based on input fields
-  const generateProductId = () => {
-    const category = form.getValues("category");
-    const brand = form.getValues("brand");
-    const productName = form.getValues("product_name");
-    
-    if (!category && !brand && !productName) return "";
-    
-    // Get first 3 chars of category (or fewer if shorter)
-    const categoryPrefix = category.slice(0, 3).toUpperCase();
-    
-    // Get first 2 chars of brand (or fewer if shorter)
-    const brandCode = brand.slice(0, 2).toUpperCase();
-    
-    // Get first 3 chars of product name
-    const nameCode = productName.slice(0, 3).toUpperCase();
-    
-    // Add timestamp to ensure uniqueness
-    const timestamp = new Date().getTime().toString().slice(-4);
-    
-    return `${categoryPrefix}${brandCode}${nameCode}-${timestamp}`;
-  };
-
-  // Watch product_id to check for duplicates
-  const watchProductId = form.watch("product_id");
-
-  React.useEffect(() => {
-    // Debounce the check to avoid too many API calls while typing
-    const handler = setTimeout(() => {
-      if (watchProductId && mode === "add") {
-        checkProductIdExists(watchProductId);
-      }
-    }, 500); // Wait 500ms after typing stops
-    
-    return () => clearTimeout(handler);
-  }, [watchProductId, mode]);
-
-  // Watch category, brand and product_name to update product_id
-  const watchCategory = form.watch("category");
-  const watchBrand = form.watch("brand");
-  const watchProductName = form.watch("product_name");
-
-  React.useEffect(() => {
-    // Only generate ID automatically in add mode, if auto-generate is enabled, and if we have enough information
-    if (mode === "add" && isAutoGenerateSku && (watchCategory || watchBrand || watchProductName)) {
-      const generatedId = generateProductId();
-      if (generatedId) {
-        form.setValue("product_id", generatedId);
-      }
-    }
-  }, [watchCategory, watchBrand, watchProductName, mode, isAutoGenerateSku]);
-
   async function onSubmit(values: FormSchema) {
     try {
-      // Check for duplicate product ID before submitting in "add" mode
-      if (mode === "add") {
-        const isDuplicate = await checkProductIdExists(values.product_id);
-        if (isDuplicate) {
-          setFormMessage({
-            type: "error",
-            message: "Cannot add product: Product ID already exists. Please use a different ID.",
-          });
-          return; // Stop form submission
-        }
-      }
-      
       setIsSubmitting(true);
       setFormMessage(null); // Clear previous messages
       const token = localStorage.getItem("token");
@@ -395,17 +449,32 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
         formData.append("image", values.image[0]);
       } else if (mode === "edit" && initialData?.image_url) {
         // If editing and no new image, keep the existing one (send URL or handle on backend)
-        // Depending on backend logic, you might not need to send anything,
-        // or send the existing URL to indicate no change.
-        // Let's assume backend preserves image if 'image' field is not sent.
-        // If backend requires image_url, uncomment below:
-        // formData.append("image_url", initialData.image_url);
+      }
+
+      // Process variants - Create FormData entries for each variant image
+      if (variants.length > 0) {
+        // Store variant images to send to server
+        variants.forEach((variant, index) => {
+          // If this variant has a File object for image, append it to formData
+          if (variant.image instanceof File) {
+            formData.append(`variantImage_${index}`, variant.image);
+            // Create a temporary variant object without the image File
+            const { image, ...variantWithoutImage } = variant;
+            // Mark this variant so backend knows it has an image to process
+            variantWithoutImage.hasImage = true;
+            // Update the variant in the array
+            variants[index] = variantWithoutImage;
+          }
+        });
+        
+        // Append the updated variants array as JSON
+        formData.append("variants", JSON.stringify(variants));
       }
 
       const endpoint =
         mode === "add"
           ? `${import.meta.env.VITE_API_URL}/api/product`
-          : `${import.meta.env.VITE_API_URL}/api/product/${values.product_id}`;
+          : `${import.meta.env.VITE_API_URL}/api/product/${initialData?.id}`;
 
       const response = await fetch(endpoint, {
         method: mode === "add" ? "POST" : "PUT",
@@ -485,52 +554,17 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
   };
 
   return (
-    <Form {...form}>
+    <Form {...form} >
       {/* Use grid for two-column layout */}
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="grid grid-cols-1 md:grid-cols-3 gap-6" /* Changed to grid layout */
+        className="grid grid-cols-1 md:grid-cols-2 gap-6" /* Changed to 3-column grid layout */
       >
-        {/* Left Column: Image */}
-        <div className="md:col-span-1 space-y-4">
-          <FormField
-            control={form.control}
-            name="image"
-            render={({ field: { onChange, value, ...fieldProps } }) => (
-              <FormItem>
-                <FormLabel>Product Image</FormLabel>
-                <FormControl>
-                  <div className="space-y-4">
-                    {/* Image Preview Area */}
-                    <div className="w-full h-auto max-h-48 flex items-center justify-center border rounded-md overflow-hidden bg-muted/30">
-                      <img
-                        src={previewSrc}
-                        alt="Product preview"
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                    {/* File Input */}
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleImageChange(e.target.files)}
-                      {...fieldProps}
-                    />
-                    {selectedFileName && (
-                      <p className="text-sm text-muted-foreground">
-                        Selected file: {selectedFileName}
-                      </p>
-                    )}
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
 
-        {/* Right Column: Other Fields */}
-        <div className="md:col-span-2 space-y-4"> {/* Takes 2 columns on medium+ screens */}
+
+        {/* Middle Column: Base Product Information */}
+        <div className="md:col-span-1 space-y-4">
+          <h3 className="text-lg font-medium">Product Information</h3>
           {formMessage && (
             <div
               className={`p-4 rounded-md ${
@@ -542,53 +576,6 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
               {formMessage.message}
             </div>
           )}
-          <FormField
-            control={form.control}
-            name="product_id"
-            render={({ field }) => (
-              <FormItem>
-                <div className="flex items-center justify-between mb-2">
-                  <FormLabel>SKU</FormLabel>
-                  {mode === "add" && (
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="auto-sku"
-                        checked={isAutoGenerateSku}
-                        onCheckedChange={setIsAutoGenerateSku}
-                      />
-                      <label
-                        htmlFor="auto-sku"
-                        className="text-sm text-muted-foreground cursor-pointer"
-                      >
-                        Auto-generate
-                      </label>
-                    </div>
-                  )}
-                </div>
-                <FormControl>
-                  <div className="relative">
-                    <Input 
-                      {...field} 
-                      disabled={mode === "edit" || isAutoGenerateSku} 
-                      className={productIdState.isDuplicate ? "border-red-500 pr-10" : ""}
-                      placeholder={isAutoGenerateSku ? "Will be auto-generated" : "Enter SKU manually"}
-                    />
-                    {productIdState.isChecking && (
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                    )}
-                  </div>
-                </FormControl>
-                {productIdState.message && (
-                  <p className={`text-sm mt-1 ${productIdState.isDuplicate ? "text-red-500 font-medium" : "text-green-600"}`}>
-                    {productIdState.message}
-                  </p>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
           <FormField
             control={form.control}
             name="category"
@@ -802,114 +789,264 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
               </FormItem>
             )}
           />
-          {/* Grid for Status and Quantity */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select value={field.value} disabled>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="In Stock">In Stock</SelectItem>
-                      <SelectItem value="Out of Stock">Out of Stock</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="quantity"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Quantity</FormLabel>
-                  <FormControl>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleQuantityChange(-1)}
-                        disabled={field.value <= 0}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <Input
-                        type="number"
-                        {...field}
-                        min={0}
-                        className="w-16 text-center"
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value, 10);
-                          field.onChange(isNaN(val) || val < 0 ? 0 : val);
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleQuantityChange(1)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <FormField
-            control={form.control}
-            name="store_price"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Store Price (PHP)</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    type="text" // Keep as text to allow commas/decimals during typing
-                    placeholder="0.00"
-                    onChange={handlePriceChange} // Use updated change handler
-                    onBlur={handlePriceBlur} // Add the blur handler for formatting
-                    value={field.value || ""}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          {/* Add Description field */}
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Product Description (Optional)</FormLabel>
-                <FormControl>
-                  <textarea
-                    className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    {...field}
-                    placeholder="Enter product description..."
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
 
-        {/* Footer spanning both columns */}
-        <DialogFooter className="md:col-span-3"> {/* Span all 3 columns */}
+        {/* Right Column: Product Variants */}
+        <div className="md:col-span-1 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">Product Variants</h3>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleAddVariant}
+                    disabled={showVariantForm}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Variant
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Add a new size, color, or other variant</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          
+          <div className="border rounded-md p-4 bg-muted/10 h-[530px] flex flex-col">
+            {showVariantForm ? (
+              <div className="space-y-3 p-2">
+                <h4 className="font-medium text-sm">
+                  {editingVariant?.id ? "Edit Variant" : "New Variant"}
+                </h4>
+                
+                {variantFormError && (
+                  <div className="bg-red-100 text-red-700 p-2 rounded-md text-sm">
+                    {variantFormError}
+                  </div>
+                )}
+                
+                <div className="space-y-3">
+                  {/* Two-column layout for variant form */}
+                  <div className="flex flex-col md:flex-row gap-4">
+                    {/* Left column: Image and upload */}
+                    <div className="flex-1">
+                      <Label htmlFor="variant-image">Variant Image</Label>
+                      <div className="space-y-2">
+                        <div className="w-full h-40 flex items-center justify-center border rounded-md overflow-hidden bg-muted/30">
+                          <img
+                            src={variantPreviewSrc}
+                            alt="Variant preview"
+                            className="max-h-36 max-w-full object-contain"
+                          />
+                        </div>
+                        <Input
+                          id="variant-image"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleVariantImageChange(e.target.files)}
+                        />
+                        {variantFileName && (
+                          <p className="text-xs text-muted-foreground">
+                            Selected file: {variantFileName}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Right column: SKU, name, price, quantity */}
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <Label htmlFor="variant-sku">SKU</Label>
+                        <Input
+                          id="variant-sku"
+                          value={editingVariant?.sku || ""}
+                          onChange={(e) => handleVariantChange("sku", e.target.value)}
+                          placeholder="VAR-001"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="variant-name">Variant Name</Label>
+                        <Input
+                          id="variant-name"
+                          value={editingVariant?.variant_name || ""}
+                          onChange={(e) => handleVariantChange("variant_name", e.target.value)}
+                          placeholder="Size: Large, Color: Red, etc."
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="variant-price">Price (PHP)</Label>
+                        <Input
+                          id="variant-price"
+                          value={editingVariant?.store_price || ""}
+                          onChange={(e) => handleVariantChange("store_price", e.target.value)}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="variant-quantity">Quantity</Label>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleVariantChange("quantity", Math.max(0, (editingVariant?.quantity || 0) - 1))}
+                            disabled={(editingVariant?.quantity || 0) <= 0}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <Input
+                            id="variant-quantity"
+                            type="number"
+                            value={editingVariant?.quantity || 0}
+                            onChange={(e) => handleVariantChange("quantity", Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-16 text-center"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleVariantChange("quantity", (editingVariant?.quantity || 0) + 1)}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Description field at the bottom */}
+                  <div>
+                    <Label htmlFor="variant-description">Description</Label>
+                    <textarea
+                      id="variant-description"
+                      className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={editingVariant?.description || ''}
+                      onChange={e => handleVariantChange('description', e.target.value)}
+                      placeholder="Enter variant description (optional)"
+                    />
+                  </div>
+                  
+                  {/* Buttons at the very bottom */}
+                  <div className="pt-4 flex justify-end space-x-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setShowVariantForm(false);
+                        setEditingVariant(null);
+                        setVariantFormError(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="button" 
+                      size="sm"
+                      onClick={handleSaveVariant}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : variants.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                <div className="text-center p-4">
+                  <p>No variants added yet.</p>
+                  <p className="text-sm mt-2">Add variants for different sizes, colors, or options with their own pricing and inventory.</p>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="mt-4"
+                    onClick={handleAddVariant}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add First Variant
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <ScrollArea className="h-full pr-4">
+                <div className="space-y-3">
+                  {variants.map((variant) => (
+                    <Card key={variant.id} className="overflow-hidden">
+                      <CardHeader className="p-3 pb-0">
+                        <div className="flex items-start justify-between">
+                          <CardTitle className="text-sm font-medium">
+                            {variant.variant_name}
+                          </CardTitle>
+                          <div className="flex space-x-1">
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7"
+                              onClick={() => handleEditVariant(variant)}
+                            >
+                              <PlusCircle className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                            </Button>
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7 text-destructive"
+                              onClick={() => handleDeleteVariant(variant.id!)}
+                            >
+                              <XCircle className="h-4 w-4" />
+                              <span className="sr-only">Delete</span>
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-3 text-sm">
+                          {/* Variant Image */}
+                          <div className="mb-2 w-full h-32 flex items-center justify-center border rounded-md overflow-hidden bg-muted/30">
+                            <img
+                              src={variant.image_url || ImagePlaceholder}
+                              alt={variant.variant_name}
+                              className="max-h-28 max-w-full object-contain"
+                            />
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <p className="text-xs text-muted-foreground">SKU</p>
+                              <p>{variant.sku}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Price</p>
+                              <p>₱{typeof variant.store_price === 'number' 
+                                  ? variant.store_price.toLocaleString('en-US', {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })
+                                  : variant.store_price}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Qty</p>
+                              <p>{variant.quantity}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        </div>
+
+        {/* Footer spanning all columns */}
+        <DialogFooter className="md:col-span-3">
           <Button
             type="submit"
             disabled={isSubmitting || formMessage?.type === "success"}

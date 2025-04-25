@@ -62,7 +62,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
             {row.getValue("product_id")}
           </div>
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[90vw] md:max-w-[95vw] lg:max-w-[90vw] xl:max-w-7xl max-h-[90vh] p-0 flex flex-col">
               <DialogHeader>
                 <DialogTitle>Edit Product</DialogTitle>
                 <DialogDescription>
@@ -106,7 +106,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
             {row.getValue("category")}
           </div>
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[90vw] md:max-w-[95vw] lg:max-w-[90vw] xl:max-w-7xl max-h-[90vh] p-0 flex flex-col">
               <DialogHeader>
                 <DialogTitle>Edit Product</DialogTitle>
                 <DialogDescription>
@@ -150,7 +150,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
             {row.getValue("brand")}
           </div>
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[90vw] md:max-w-[90vw] lg:max-w-[80vw] xl:max-w-[1200px]">
               <DialogHeader>
                 <DialogTitle>Edit Product</DialogTitle>
                 <DialogDescription>
@@ -194,7 +194,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
             {row.getValue("product_name")}
           </div>
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[90vw] md:max-w-[90vw] lg:max-w-[80vw] xl:max-w-[1200px]">
               <DialogHeader>
                 <DialogTitle>Edit Product</DialogTitle>
                 <DialogDescription>
@@ -245,7 +245,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
             </Badge>
           </div>
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[90vw] md:max-w-[90vw] lg:max-w-[80vw] xl:max-w-[1200px]">
               <DialogHeader>
                 <DialogTitle>Edit Product</DialogTitle>
                 <DialogDescription>
@@ -290,7 +290,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
             {row.getValue("quantity")}
           </div>
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[90vw] md:max-w-[95vw] lg:max-w-[90vw] xl:max-w-7xl max-h-[90vh] p-8 flex flex-col">
               <DialogHeader>
                 <DialogTitle>Edit Product</DialogTitle>
                 <DialogDescription>
@@ -516,7 +516,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
           </Dialog>
 
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[90vw] md:max-w-[95vw] lg:max-w-[90vw] xl:max-w-7xl max-h-[90vh] p-8 flex flex-col">
               <DialogHeader>
                 <DialogTitle>Edit Product</DialogTitle>
                 <DialogDescription>
