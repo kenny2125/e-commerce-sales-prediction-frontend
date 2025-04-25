@@ -41,7 +41,7 @@ import { useNavigate } from "react-router-dom";
 
 import type { Inventory } from "@/components/admin/InventoryColumns";
 import { getColumns } from "@/components/admin/InventoryColumns";
-import { ProductForm } from "@/components/admin/ProductForm";
+import { AddProductForm } from "@/components/admin/AddProductForm"; // Import AddProductForm directly
 
 type InventoryStats = {
   totalProducts: number;
@@ -200,7 +200,7 @@ export function Inventory() {
                   inventory.
                 </DialogDescription>
               </DialogHeader>
-              <ProductForm mode="add" onSuccess={handleAddSuccess} />
+              <AddProductForm onSuccess={handleAddSuccess} /> {/* Use AddProductForm directly */}
             </DialogContent>
           </Dialog>
           <Input
