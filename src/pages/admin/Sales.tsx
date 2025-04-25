@@ -8,12 +8,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { LineChartInteractive } from "@/components/charts/LineChartInterative";
-import { PhilippinePeso, TableIcon, BarChart, LineChart, ShoppingCart, TrendingUp, Users } from "lucide-react";
+import { PhilippinePeso, TableIcon, BarChart, LineChart, ShoppingCart, TrendingUp, Users, Calendar } from "lucide-react";
 import { TopCategories } from "@/components/charts/TopCategories";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustomerAcquisition } from "@/components/charts/CustomerAcquisition";
 import { SalesPrediction } from "@/components/charts/SalesPrediction";
 import { SalesRecordsTable } from "@/components/admin/SalesRecordsTable";
+import { HistoricalSalesTable } from "@/components/admin/HistoricalSalesTable";
 
 // Interface for KPI data structure
 interface KpiData {
@@ -148,6 +149,10 @@ export default function Sales() {
                       <TableIcon className="h-4 w-4" />
                       <span>Sales Records</span>
                     </TabsTrigger>
+                    <TabsTrigger value="historical" className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>Historical Data</span>
+                    </TabsTrigger>
                   </TabsList>
                 </div>
 
@@ -159,6 +164,11 @@ export default function Sales() {
                 {/* Table Tab Content */}
                 <TabsContent value="table" className="mt-0">
                   <SalesRecordsTable />
+                </TabsContent>
+                
+                {/* Historical Sales Tab Content */}
+                <TabsContent value="historical" className="mt-0">
+                  <HistoricalSalesTable />
                 </TabsContent>
               </Tabs>
             </CardHeader>
