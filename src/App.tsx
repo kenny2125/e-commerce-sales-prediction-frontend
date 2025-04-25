@@ -58,23 +58,30 @@ const AppContent: React.FC = () => {
             <Route path="/purchasing-guide" element={<PurchasingGuide />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             
-            {/* Protected Admin Routes */}
-            <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
-              <Route path="/dashboard" element={<Dashboard />} />
+            {/* SUPER_ADMIN Route - Only SUPER_ADMIN can access user management */}
+            <Route element={<ProtectedRoute allowedRoles={["SUPER_ADMIN"]} />}>
               <Route path="/users" element={<UserManagement />} />
             </Route>
 
-            {/* Protected Admin & Editor Routes */}
-            <Route element={<ProtectedRoute allowedRoles={["admin", "editor"]} />}>
+            {/* Dashboard Access - SUPER_ADMIN, admin & accountant */}
+            <Route element={<ProtectedRoute allowedRoles={["SUPER_ADMIN", "admin", "accountant"]} />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+            </Route>
+
+            {/* Inventory Access - SUPER_ADMIN, admin & warehouse */}
+            <Route element={<ProtectedRoute allowedRoles={["SUPER_ADMIN", "admin", "warehouse"]} />}>
               <Route path="/inventory" element={<Inventory />} />
+            </Route>
+
+            {/* Orders Access - SUPER_ADMIN, admin, accountant & warehouse */}
+            <Route element={<ProtectedRoute allowedRoles={["SUPER_ADMIN", "admin", "accountant", "warehouse"]} />}>
               <Route path="/orders" element={<Orders />} />
             </Route>
 
-            {/* Protected Admin, Editor & Viewer Routes */}
-            <Route element={<ProtectedRoute allowedRoles={["admin", "editor", "viewer"]} />}>
+            {/* Sales Access - SUPER_ADMIN, admin & accountant */}
+            <Route element={<ProtectedRoute allowedRoles={["SUPER_ADMIN", "admin", "accountant"]} />}>
               <Route path="/sales" element={<Sales />} />
             </Route>
-                          
             
             {/* 404 Route - This should always be the last route */}
             <Route path="*" element={<NotFound />} />

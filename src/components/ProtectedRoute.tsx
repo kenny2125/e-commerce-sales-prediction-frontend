@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useUser, UserRole } from "../contexts/UserContext";
 
 interface ProtectedRouteProps {
@@ -7,6 +7,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
   const { currentUser, isLoggedIn, isInitialized } = useUser();
+  const location = useLocation();
   
   // Don't make any authorization decisions until we've loaded user data from localStorage
   if (!isInitialized) {
@@ -20,12 +21,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
     return <Navigate to="/unauthorized" replace />;
   }
   
-  // Admin has access to everything
-  if (currentUser.role === "admin") {
+  // Special check for users management route - only SUPER_ADMIN can access
+  if (location.pathname === "/users" && currentUser.role !== "SUPER_ADMIN") {
+    return <Navigate to="/unauthorized" replace />;
+  }
+  
+  // SUPER_ADMIN has access to everything
+  if (currentUser.role === "SUPER_ADMIN") {
     return <Outlet />;
   }
   
-  // Editor and Viewer have access to their allowed routes
+  // Other roles have access only to their allowed routes
   if (allowedRoles.includes(currentUser.role)) {
     return <Outlet />;
   }

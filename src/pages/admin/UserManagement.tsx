@@ -81,7 +81,7 @@ const formSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   first_name: z.string().optional(),
   last_name: z.string().optional(),
-  role: z.enum(["admin", "editor", "viewer", "customer"]),
+  role: z.enum(["SUPER_ADMIN", "admin", "accountant", "warehouse", "editor", "viewer", "customer"]),
 })
 
 type FormSchema = z.infer<typeof formSchema>
@@ -117,8 +117,10 @@ export function UserManagement() {
           throw new Error('Failed to fetch users')
         }
 
-        const data = await response.json()
-        setUsers(data)
+        const data: UserManagement[] = await response.json()
+        // Filter out customer users as per requirement
+        const filteredUsers = data.filter(user => user.role !== 'customer')
+        setUsers(filteredUsers)
       } catch (error) {
         console.error('Error fetching users:', error)
         toast.error('Failed to fetch users')
@@ -272,8 +274,17 @@ export function UserManagement() {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuLabel>Change Role</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleRoleUpdate("SUPER_ADMIN")}>
+                Make Super Admin
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleRoleUpdate("admin")}>
                 Make Admin
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleRoleUpdate("accountant")}>
+                Make Accountant
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleRoleUpdate("warehouse")}>
+                Make Warehouse Manager
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleRoleUpdate("editor")}>
                 Make Editor
@@ -600,7 +611,10 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
+                  <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="accountant">Accountant</SelectItem>
+                  <SelectItem value="warehouse">Warehouse Manager</SelectItem>
                   <SelectItem value="editor">Editor</SelectItem>
                   <SelectItem value="viewer">Viewer</SelectItem>
                   <SelectItem value="customer">Customer</SelectItem>
@@ -628,4 +642,4 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
   )
 }
 
-export default UserManagement;
+export default UserManagement

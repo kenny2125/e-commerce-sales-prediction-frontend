@@ -17,7 +17,7 @@ import { ModeToggle } from "./ui/mode-toggle";
 import { LogInDialog } from "./dialogs/LogInDialog";
 import Logo from "./Logo";
 import { useUser } from "@/contexts/UserContext";
-import { Outlet, Link } from "react-router-dom";
+import { Outlet, Link, useNavigate } from "react-router-dom";
 import {
   NavigationMenu,
   NavigationMenuList,
@@ -32,10 +32,31 @@ import * as React from "react";
 
 export default function Header() {
   const { currentUser, isLoggedIn } = useUser();
+  const navigate = useNavigate();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
+
+  // Redirect users to their default page based on role
+  useEffect(() => {
+    if (currentUser && window.location.pathname === '/') {
+      switch (currentUser.role) {
+        case 'admin':
+          navigate('/dashboard');
+          break;
+        case 'warehouse':
+          navigate('/inventory');
+          break;
+        case 'accountant':
+          navigate('/sales');
+          break;
+        case 'SUPER_ADMIN':
+          navigate('/dashboard');
+          break;
+      }
+    }
+  }, [currentUser, navigate]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -64,8 +85,8 @@ export default function Header() {
 
     const links = [];
 
-    // Admin has access to everything
-    if (currentUser.role === "admin") {
+    // SUPER_ADMIN has access to everything including user management
+    if (currentUser.role === "SUPER_ADMIN") {
       links.push(
         {
           to: "/dashboard",
@@ -88,6 +109,66 @@ export default function Header() {
           text: "Orders",
         },
         { to: "/users", icon: <Users className="w-5 h-5" />, text: "Users" }
+      );
+    }
+    // Admin has access to everything except user management
+    else if (currentUser.role === "admin") {
+      links.push(
+        {
+          to: "/dashboard",
+          icon: <LayoutDashboard className="w-5 h-5" />,
+          text: "Dashboard",
+        },
+        {
+          to: "/inventory",
+          icon: <PackageSearch className="w-5 h-5" />,
+          text: "Inventory",
+        },
+        {
+          to: "/sales",
+          icon: <TrendingUp className="w-5 h-5" />,
+          text: "Sales",
+        },
+        {
+          to: "/orders",
+          icon: <ScrollText className="w-5 h-5" />,
+          text: "Orders",
+        }
+      );
+    }
+    // Accountant has access to dashboard, sales and orders
+    else if (currentUser.role === "accountant") {
+      links.push(
+        {
+          to: "/dashboard",
+          icon: <LayoutDashboard className="w-5 h-5" />,
+          text: "Dashboard",
+        },
+        {
+          to: "/sales",
+          icon: <TrendingUp className="w-5 h-5" />,
+          text: "Sales",
+        },
+        {
+          to: "/orders",
+          icon: <ScrollText className="w-5 h-5" />,
+          text: "Orders",
+        }
+      );
+    }
+    // Warehouse has access to inventory and orders
+    else if (currentUser.role === "warehouse") {
+      links.push(
+        {
+          to: "/inventory",
+          icon: <PackageSearch className="w-5 h-5" />,
+          text: "Inventory",
+        },
+        {
+          to: "/orders",
+          icon: <ScrollText className="w-5 h-5" />,
+          text: "Orders",
+        }
       );
     }
     // Editor has access to inventory, orders, and sales
@@ -147,6 +228,14 @@ export default function Header() {
 
   const navigationLinks = getNavigationLinks();
 
+  // Check if user role should have the admin header style
+  const hasAdminHeader = currentUser?.role === "SUPER_ADMIN" || 
+                         currentUser?.role === "admin" || 
+                         currentUser?.role === "accountant" || 
+                         currentUser?.role === "warehouse" ||
+                         currentUser?.role === "editor" ||
+                         currentUser?.role === "viewer";
+
   // ListItem component for navigation menu
   const ListItem = React.forwardRef<
     React.ElementRef<"a">,
@@ -177,9 +266,7 @@ export default function Header() {
   return (
     <div className="w-full flex flex-col">
       {/* Header row (existing) */}
-      {currentUser?.role === "admin" ||
-      currentUser?.role === "editor" ||
-      currentUser?.role === "viewer" ? (
+      {hasAdminHeader ? (
         <div className="min-h-[4rem] lg:h-[8rem] flex flex-col lg:flex-row justify-between items-center w-full">
           {/* Logo - Left */}
           <div className="flex w-full lg:w-1/4 justify-between lg:justify-start items-center px-4 lg:px-0 py-2 lg:py-0">
