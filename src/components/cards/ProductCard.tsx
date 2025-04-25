@@ -14,7 +14,7 @@ interface ProductCardProps {
     product_name: string;
     store_price: number;
     brand: string;
-    quantity: number;  // stock level
+    total_quantity: number; // Changed from quantity to total_quantity
   }
 }
 
@@ -117,7 +117,7 @@ function ProductCard({ product }: ProductCardProps) {
             <Eye size={14} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
             <span className="whitespace-nowrap">View Details</span>
           </Button>
-        ) : product.quantity === 0 ? (
+        ) : product.total_quantity === 0 ? ( // Use total_quantity here
           <Button 
             variant="outline" 
             size="sm" 

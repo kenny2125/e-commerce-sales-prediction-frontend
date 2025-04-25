@@ -7,7 +7,7 @@ interface Product {
   brand: string;
   product_name: string;
   status: string;
-  quantity: number;
+  total_quantity: number;
   store_price: number;
   image_url: string;
 }
