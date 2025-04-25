@@ -14,28 +14,61 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export type SalesRecord = {
-  salesID: string
-  paymongoID: string
-  status: "Paid" | "Refunded"
-  method: "COD" | "GCASH" | "PAYMAYA"
-  customerName: string
-  paidDate: string
+  id: number
+  date: string
   amount: number
+  order_id: number
+  order_number: string
+  user_id: number
+  user_fullname?: string // Add the user's full name field
+  payment_method: string
+  status: string
+  created_at: string
+  updated_at: string
 }
 
 export const salesColumns: ColumnDef<SalesRecord>[] = [
   {
-    accessorKey: "salesID",
-    header: "Sales ID",
+    accessorKey: "order_number",
+    header: "Order Number",
     cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("salesID")}</div>
+      <div>{row.getValue("order_number")}</div>
     ),
   },
   {
-    accessorKey: "paymongoID",
-    header: "Paymongo ID",
+    accessorKey: "date",
+    header: "Date",
     cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("paymongoID")}</div>
+      <div>{new Date(row.getValue("date")).toLocaleDateString()}</div>
+    ),
+  },
+  {
+    accessorKey: "amount",
+    header: () => <div className="text-right">Amount</div>,
+    cell: ({ row }) => {
+      const amount = parseFloat(row.getValue("amount"))
+
+      // Format the amount as a PHP amount
+      const formatted = new Intl.NumberFormat("en-PH", {
+        style: "currency",
+        currency: "PHP",
+      }).format(amount)
+
+      return <div className="text-right font-medium">{formatted}</div>
+    },
+  },
+  {
+    accessorKey: "user_fullname",
+    header: "Customer",
+    cell: ({ row }) => (
+      <div className="capitalize">{row.getValue("user_fullname") || "Unknown"}</div>
+    ),
+  },
+  {
+    accessorKey: "payment_method",
+    header: "Payment Method",
+    cell: ({ row }) => (
+      <div className="capitalize">{row.getValue("payment_method")}</div>
     ),
   },
   {
@@ -46,46 +79,10 @@ export const salesColumns: ColumnDef<SalesRecord>[] = [
     ),
   },
   {
-    accessorKey: "method",
-    header: "Payment Method",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("method")}</div>
-    ),
-  },
-  {
-    accessorKey: "customerName",
-    header: "Customer Name",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("customerName")}</div>
-    ),
-  },
-  {
-    accessorKey: "paidDate",
-    header: "Paid At",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("paidDate")}</div>
-    ),
-  },
-  {
-    accessorKey: "amount",
-    header: () => <div className="text-right">Amount</div>,
-    cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("amount"))
-
-      // Format the amount as a dollar amount
-      const formatted = new Intl.NumberFormat("en-PH", {
-        style: "currency",
-        currency: "PHP",
-      }).format(amount)
-
-      return <div className="text-right font-medium">{formatted}</div>
-    },
-  },
-  {
     id: "actions",
     enableHiding: false,
     cell: ({ row }) => {
-      const payment = row.original
+      const sale = row.original
 
       return (
         <DropdownMenu>
@@ -98,13 +95,13 @@ export const salesColumns: ColumnDef<SalesRecord>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(payment.salesID)}
+              onClick={() => navigator.clipboard.writeText(sale.order_number)}
             >
-              Copy payment ID
+              Copy order number
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>View Details</DropdownMenuItem>
-            <DropdownMenuItem>Print Receipt</DropdownMenuItem>
+            <DropdownMenuItem>View Order</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )

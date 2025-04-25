@@ -13,15 +13,9 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ChevronDown, Calendar } from "lucide-react"
+import { ChevronDown, Calendar, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import {
   Table,
@@ -40,9 +34,22 @@ export function HistoricalSalesTable() {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
-    actualsales: false, // Hide the raw amount column by default
+    id: false,
+    actualsales: false,
+    select: false,
   })
   const [rowSelection, setRowSelection] = React.useState({})
+  const [searchQuery, setSearchQuery] = useState("")
+
+  // Function to format date to full format (March 2, 2025)
+  const formatDateToFull = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
 
   // Fetch historical sales data function
   const fetchHistoricalSalesData = async () => {
@@ -60,7 +67,7 @@ export function HistoricalSalesTable() {
       const formattedData = result.map((item: any) => ({
         id: item.id,
         date: item.date,
-        formatted_date: new Date(item.date).toLocaleDateString(),
+        full_date: formatDateToFull(item.date),
         actualsales: parseFloat(item.actualsales),
         formatted_sales: new Intl.NumberFormat('en-PH', {
           minimumFractionDigits: 2,
@@ -105,6 +112,27 @@ export function HistoricalSalesTable() {
     },
   })
 
+  // Filter data based on search query
+  const filteredData = React.useMemo(() => {
+    if (!searchQuery) return data;
+    return data.filter(item => 
+      item.full_date.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [data, searchQuery]);
+
+  // Split data into two arrays for side-by-side tables
+  const leftTableData = React.useMemo(() => {
+    const filtered = searchQuery ? filteredData : data;
+    const halfLength = Math.ceil(filtered.length / 2);
+    return filtered.slice(0, halfLength);
+  }, [filteredData, data, searchQuery]);
+
+  const rightTableData = React.useMemo(() => {
+    const filtered = searchQuery ? filteredData : data;
+    const halfLength = Math.ceil(filtered.length / 2);
+    return filtered.slice(halfLength);
+  }, [filteredData, data, searchQuery]);
+
   if (loading) {
     return <div>Loading historical sales records...</div>
   }
@@ -118,120 +146,81 @@ export function HistoricalSalesTable() {
       <div className="flex flex-col sm:flex-row items-center justify-between py-4 gap-4">
         <div className="flex items-center gap-2">
           <Calendar size="24px" />
-          <div className="text-lg font-semibold">Historical Monthly Data</div>
+          <div className="text-lg font-semibold">Monthly Sales Data</div>
         </div>
-        <div className="flex flex-wrap gap-2 items-center">
-          {/* Column visibility dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown className="h-4 w-4 ml-2" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  )
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          {/* ID Search */}
+        <div className="flex items-center gap-2 w-full max-w-xs">
+          <Search className="h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search ID..."
-            value={(table.getColumn("id")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("id")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
+            placeholder="Search by date..."
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            className="flex-1"
           />
         </div>
       </div>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  )
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
+
+      <div className="flex flex-col md:flex-row gap-4">
+        {/* Left Table */}
+        <div className="flex-1 rounded-md border">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  colSpan={historicalSalesColumns.length}
-                  className="h-24 text-center"
-                >
-                  No historical sales records found. 
-                </TableCell>
+                <TableHead className="font-semibold">Date</TableHead>
+                <TableHead className="font-semibold">Sales Amount</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
+            </TableHeader>
+            <TableBody>
+              {leftTableData.length > 0 ? (
+                leftTableData.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="font-medium">{row.full_date}</TableCell>
+                    <TableCell className="font-medium">₱{row.formatted_sales}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={2} className="h-24 text-center">
+                    No sales records found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
+        
+        {/* Right Table */}
+        <div className="flex-1 rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="font-semibold">Date</TableHead>
+                <TableHead className="font-semibold">Sales Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rightTableData.length > 0 ? (
+                rightTableData.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="font-medium">{row.full_date}</TableCell>
+                    <TableCell className="font-medium">₱{row.formatted_sales}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={2} className="h-24 text-center">
+                    No sales records found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* Total records summary */}
+      <div className="flex items-center justify-end py-4">
+        <div className="text-sm text-muted-foreground">
+          {searchQuery ? filteredData.length : data.length} total records
         </div>
       </div>
     </>

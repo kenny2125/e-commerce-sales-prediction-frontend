@@ -5,13 +5,12 @@ import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
 
 // This represents the structure of our historical sales data
 export interface HistoricalSalesRecord {
   id: number
   date: string
-  formatted_date: string
+  full_date: string  // New field for full date format (March 2, 2025)
   actualsales: number
   formatted_sales: string
 }
@@ -40,12 +39,7 @@ export const historicalSalesColumns: ColumnDef<HistoricalSalesRecord>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "id",
-    header: "ID",
-    cell: ({ row }) => <div>{row.getValue("id")}</div>,
-  },
-  {
-    accessorKey: "formatted_date",
+    accessorKey: "full_date",
     header: ({ column }) => {
       return (
         <Button
@@ -57,7 +51,7 @@ export const historicalSalesColumns: ColumnDef<HistoricalSalesRecord>[] = [
         </Button>
       )
     },
-    cell: ({ row }) => <div>{row.getValue("formatted_date")}</div>,
+    cell: ({ row }) => <div className="font-medium">{row.getValue("full_date")}</div>,
   },
   {
     accessorKey: "formatted_sales",
@@ -75,6 +69,12 @@ export const historicalSalesColumns: ColumnDef<HistoricalSalesRecord>[] = [
     cell: ({ row }) => (
       <div className="font-medium">₱{row.getValue("formatted_sales")}</div>
     ),
+  },
+  {
+    accessorKey: "id",
+    header: "ID",
+    cell: ({ row }) => <div>{row.getValue("id")}</div>,
+    enableHiding: true,
   },
   {
     accessorKey: "actualsales",

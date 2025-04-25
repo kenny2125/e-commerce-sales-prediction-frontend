@@ -39,7 +39,13 @@ export function SalesRecordsTable() {
   const [error, setError] = useState<string | null>(null)
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
+    id: false,
+    created_at: false,
+    updated_at: false,
+    user_id: false, // Hide the user_id column since we're showing the user's full name
+    order_id: false // Hide the order_id column since we're showing order_number
+  })
   const [rowSelection, setRowSelection] = React.useState({})
 
   useEffect(() => {
@@ -47,7 +53,7 @@ export function SalesRecordsTable() {
       setLoading(true)
       setError(null)
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sales`)
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sales/with-user-names`)
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
@@ -131,10 +137,10 @@ export function SalesRecordsTable() {
           </DropdownMenu>
           
           <Input
-            placeholder="Search Paymongo ID..."
-            value={(table.getColumn("paymongoID")?.getFilterValue() as string) ?? ""}
+            placeholder="Search by Order Number..."
+            value={(table.getColumn("order_number")?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
-              table.getColumn("paymongoID")?.setFilterValue(event.target.value)
+              table.getColumn("order_number")?.setFilterValue(event.target.value)
             }
             className="max-w-sm"
           />
