@@ -6,10 +6,10 @@ import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 
 // Import images from assets
-import homepage1 from "@/assets/homepage-1.webp";
-import homepage2 from "@/assets/homepage-2.webp";
-import homepage3 from "@/assets/homepage-3.webp";
-import homepage4 from "@/assets/homepage-4.webp";
+import homepageBanner from "@/assets/banner.webp";
+import schoolBanner from "@/assets/school.webp";
+import furnitureBanner from "@/assets/furniture.webp";
+import technologyBanner from "@/assets/technology.webp";
 
 interface Product {
   product_id: string;
@@ -63,7 +63,7 @@ function Home() {
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: `url(${homepage1})`,
+            backgroundImage: `url(${homepageBanner})`,
           }}
         ></div>
         <div className="relative z-20 text-center text-white px-4">
@@ -93,45 +93,60 @@ function Home() {
       <section className="container mx-auto px-4 mb-16">
         {/* Office Supplies Category */}
         <div className="mb-12">
-          <div className="relative h-[300px] overflow-hidden">
+          <Link to="/search" className="block relative h-[300px] overflow-hidden group cursor-pointer">
             <img
-              src={homepage2}
+              src={schoolBanner}
               alt="Office & School Supplies"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             />
-            <div className="absolute inset-0 bg-black/40 flex items-center p-8">
-              <h2 className="text-4xl font-bold text-white">
-                Office & School Supplies
-              </h2>
+            <div className="absolute inset-0 bg-black/40 flex items-center p-8 transition-all duration-300 group-hover:bg-black/50">
+              <div className="transform transition-transform duration-300 group-hover:translate-x-2">
+                <h2 className="text-4xl font-bold text-white">
+                  Office & School Supplies
+                </h2>
+                <span className="inline-block mt-2 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  Shop now &rarr;
+                </span>
+              </div>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Furniture and Technology Categories (side by side on larger screens) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Furniture Category */}
-          <div className="relative h-[250px] overflow-hidden">
+          <Link to="/search" className="block relative h-[250px] overflow-hidden group cursor-pointer">
             <img
-              src={homepage3}
+              src={furnitureBanner}
               alt="Furniture"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             />
-            <div className="absolute inset-0 bg-black/40 flex items-center p-8">
-              <h2 className="text-4xl font-bold text-white">Furniture</h2>
+            <div className="absolute inset-0 bg-black/40 flex items-center p-8 transition-all duration-300 group-hover:bg-black/50">
+              <div className="transform transition-transform duration-300 group-hover:translate-x-2">
+                <h2 className="text-4xl font-bold text-white">Furniture</h2>
+                <span className="inline-block mt-2 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  Shop now &rarr;
+                </span>
+              </div>
             </div>
-          </div>
+          </Link>
 
           {/* Technology Category */}
-          <div className="relative h-[250px] overflow-hidden">
+          <Link to="/search" className="block relative h-[250px] overflow-hidden group cursor-pointer">
             <img
-              src={homepage4}
+              src={technologyBanner}
               alt="Technology"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             />
-            <div className="absolute inset-0 bg-black/40 flex items-center p-8">
-              <h2 className="text-4xl font-bold text-white">Technology</h2>
+            <div className="absolute inset-0 bg-black/40 flex items-center p-8 transition-all duration-300 group-hover:bg-black/50">
+              <div className="transform transition-transform duration-300 group-hover:translate-x-2">
+                <h2 className="text-4xl font-bold text-white">Technology</h2>
+                <span className="inline-block mt-2 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  Shop now &rarr;
+                </span>
+              </div>
             </div>
-          </div>
+          </Link>
         </div>
       </section>
 
