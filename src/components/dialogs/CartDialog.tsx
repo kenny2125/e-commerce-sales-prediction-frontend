@@ -30,7 +30,9 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 interface CartItem {
   product_id: string;
+  sku: string; // Added SKU
   product_name: string;
+  variant_name: string | null; // Added variant name
   quantity: number;
   store_price: number;
   image_url: string | null;
@@ -42,7 +44,7 @@ export function CartDialog() {
   const [open, setOpen] = useState(false);
   const { currentUser } = useUser();
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
-  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]); // Store composite key "product_id-sku"
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -67,31 +69,53 @@ export function CartDialog() {
 
   const fetchCartItems = async () => {
     setLoading(true);
-    // Read stored product IDs and quantities
+    // Read stored product IDs, SKUs, and quantities
     const stored = localStorage.getItem('cartItems');
-    const localItems: Array<{ product_id: string; quantity: number }> = stored ? JSON.parse(stored) : [];
+    // Expecting format: { product_id: string, sku: string, quantity: number }[]
+    const localItems: Array<{ product_id: string; sku: string; quantity: number }> = stored ? JSON.parse(stored) : [];
+
     if (localItems.length === 0) {
       setCartItems([]);
       setLoading(false);
       return;
     }
-    // Fetch up-to-date product details
+
+    // Fetch up-to-date product variant details
     try {
-      const response = await fetch(`${API_URL}/api/cart/details`, {
+      // *** IMPORTANT: Update this endpoint on your backend ***
+      const response = await fetch(`${API_URL}/api/cart/variant-details`, { // Assuming a new/updated endpoint
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productIds: localItems.map(i => i.product_id) })
+        // Send product_id and sku pairs
+        body: JSON.stringify({ items: localItems.map(i => ({ product_id: i.product_id, sku: i.sku })) })
       });
-      if (!response.ok) throw new Error('Failed to fetch product details');
-      const details: Array<{ product_id: string; product_name: string; store_price: number; image_url: string | null; stock: number }> = await response.json();
-      // Merge stored quantities with details
+
+      if (!response.ok) throw new Error('Failed to fetch product variant details');
+
+      // Expecting format: { product_id: string, sku: string, product_name: string, variant_name: string | null, store_price: number, image_url: string | null, stock: number }[]
+      const details: Array<Omit<CartItem, 'quantity'>> = await response.json();
+
+      // Merge stored quantities with fetched details
       const merged: CartItem[] = details.map(d => {
-        const local = localItems.find(i => i.product_id === d.product_id)!;
-        return { ...d, quantity: Math.min(local.quantity, d.stock) };
-      });
+        const local = localItems.find(i => i.product_id === d.product_id && i.sku === d.sku);
+        // Clamp quantity based on fetched stock, ensure local item exists
+        const quantity = local ? Math.min(local.quantity, d.stock) : 0;
+        return { ...d, quantity };
+      }).filter(item => item.quantity > 0); // Filter out items that might have become unavailable or had quantity 0
+
       setCartItems(merged);
+
+      // Update localStorage with potentially clamped quantities
+      const updatedLocalItems = merged.map(item => ({ product_id: item.product_id, sku: item.sku, quantity: item.quantity }));
+      localStorage.setItem('cartItems', JSON.stringify(updatedLocalItems));
+
+      // Clear selection if items change significantly (optional, but safer)
+      setSelectedItems([]);
+
     } catch (err) {
       console.error('Error loading cart items:', err);
+      // Potentially clear local cart if fetch fails badly?
+      // localStorage.removeItem('cartItems');
       setCartItems([]);
     } finally {
       setLoading(false);
@@ -103,58 +127,101 @@ export function CartDialog() {
       setLoginDialogOpen(true);
       return;
     }
-    // Filter cart items to only include selected ones
-    const selectedProducts = cartItems.filter(item => 
-      selectedItems.includes(item.product_id)
+    // Filter cart items to only include selected ones based on composite key
+    const selectedProducts = cartItems.filter(item =>
+      selectedItems.includes(`${item.product_id}-${item.sku}`)
     );
-    
-    // Store selected items in localStorage
+
+    if (selectedProducts.length === 0) {
+        // Maybe show a toast message?
+        console.log("No items selected for checkout.");
+        return;
+    }
+
+    // Store selected items (full details) in localStorage for checkout page
     localStorage.setItem('checkoutItems', JSON.stringify(selectedProducts));
-    // Keep cart intact until order succeeds; just clear selection
+
+    // Option 1: Remove selected items from cart immediately
+    // const remainingCartItems = cartItems.filter(item =>
+    //   !selectedItems.includes(`${item.product_id}-${item.sku}`)
+    // );
+    // setCartItems(remainingCartItems);
+    // localStorage.setItem('cartItems', JSON.stringify(remainingCartItems.map(i => ({ product_id: i.product_id, sku: i.sku, quantity: i.quantity }))));
+
+    // Option 2: Keep cart intact, just clear selection (current approach)
     setSelectedItems([]);
-    
+
     setOpen(false);
     navigate('/checkout');
   };
 
-  const toggleItemSelection = (productId: string) => {
+  // Use composite key "product_id-sku" for selection
+  const toggleItemSelection = (productId: string, sku: string) => {
+    const compositeKey = `${productId}-${sku}`;
     setSelectedItems(prev => {
-      if (prev.includes(productId)) {
-        return prev.filter(id => id !== productId);
+      if (prev.includes(compositeKey)) {
+        return prev.filter(key => key !== compositeKey);
       } else {
-        return [...prev, productId];
+        return [...prev, compositeKey];
       }
     });
   };
 
-  const handleQuantityChange = (productId: string, newQuantity: number) => {
-    // clamp to stock
-    const updated = cartItems.map(item =>
-      item.product_id === productId
-        ? { ...item, quantity: Math.min(newQuantity, item.stock) }
-        : item
-    );
-    setCartItems(updated);
+  const handleQuantityChange = (productId: string, sku: string, newQuantity: number) => {
+    let updatedCartItems: CartItem[] = [];
+    const clampedQuantity = Math.max(1, newQuantity); // Ensure quantity is at least 1
+
+    setCartItems(currentItems => {
+        updatedCartItems = currentItems.map(item => {
+            if (item.product_id === productId && item.sku === sku) {
+                // Clamp quantity based on stock
+                const finalQuantity = Math.min(clampedQuantity, item.stock);
+                return { ...item, quantity: finalQuantity };
+            }
+            return item;
+        });
+        return updatedCartItems;
+    });
+
     // Update localStorage stored quantities
-    const storedArr = JSON.parse(localStorage.getItem('cartItems') || '[]');
-    const synced = storedArr.map((i: any) =>
-      i.product_id === productId ? { ...i, quantity: Math.min(newQuantity, updated.find(u => u.product_id === productId)!.stock) } : i
-    );
+    const stored = localStorage.getItem('cartItems');
+    const storedArr: Array<{ product_id: string; sku: string; quantity: number }> = stored ? JSON.parse(stored) : [];
+    const synced = storedArr.map(i => {
+        if (i.product_id === productId && i.sku === sku) {
+            const itemInCart = updatedCartItems.find(u => u.product_id === productId && u.sku === sku);
+            // Use the stock from the fetched cart item for clamping
+            const stock = itemInCart ? itemInCart.stock : 0;
+            return { ...i, quantity: Math.min(clampedQuantity, stock) };
+        }
+        return i;
+    }).filter(i => i.quantity > 0); // Also filter here if quantity becomes 0
     localStorage.setItem('cartItems', JSON.stringify(synced));
   };
 
-  const handleRemoveItem = (productId: string) => {
-    const updated = cartItems.filter(item => item.product_id !== productId);
-    setCartItems(updated);
-    setSelectedItems(prev => prev.filter(id => id !== productId));
-    localStorage.setItem('cartItems', JSON.stringify(updated));
+  const handleRemoveItem = (productId: string, sku: string) => {
+    const compositeKey = `${productId}-${sku}`;
+    // Update cartItems state
+    const updatedCart = cartItems.filter(item => !(item.product_id === productId && item.sku === sku));
+    setCartItems(updatedCart);
+
+    // Update selection state
+    setSelectedItems(prev => prev.filter(key => key !== compositeKey));
+
+    // Update localStorage
+    const stored = localStorage.getItem('cartItems');
+    const storedArr: Array<{ product_id: string; sku: string; quantity: number }> = stored ? JSON.parse(stored) : [];
+    const updatedStoredArr = storedArr.filter(item => !(item.product_id === productId && item.sku === sku));
+    localStorage.setItem('cartItems', JSON.stringify(updatedStoredArr));
   };
 
   const getTotal = () => {
     return cartItems
-      .filter(item => selectedItems.includes(item.product_id))
+      .filter(item => selectedItems.includes(`${item.product_id}-${item.sku}`))
       .reduce((sum, item) => sum + (item.store_price * item.quantity), 0);
   };
+
+  // Composite key for React lists
+  const getItemKey = (item: CartItem) => `${item.product_id}-${item.sku}`;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -196,10 +263,10 @@ export function CartDialog() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[50px]"></TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
+                      <TableHead className="w-[50px]"></TableHead> {/* Remove */}
+                      <TableHead className="w-[50px]"></TableHead> {/* Select */}
                       <TableHead className="w-[100px]">Image</TableHead>
-                      <TableHead className="max-w-[150px] sm:max-w-[180px]">Product Name</TableHead>
+                      <TableHead className="max-w-[150px] sm:max-w-[180px]">Product</TableHead>
                       <TableHead>Quantity</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                     </TableRow>
@@ -207,15 +274,15 @@ export function CartDialog() {
                   <TableBody>
                     {cartItems.map((item) => (
                       <TableRow
-                        key={item.product_id}
+                        key={getItemKey(item)} // Use composite key
                         className="align-middle cursor-pointer"
-                        onClick={() => toggleItemSelection(item.product_id)}
+                        onClick={() => toggleItemSelection(item.product_id, item.sku)} // Use composite key
                       >
                         <TableCell>
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={(e) => { e.stopPropagation(); handleRemoveItem(item.product_id); }}
+                            onClick={(e) => { e.stopPropagation(); handleRemoveItem(item.product_id, item.sku); }} // Use composite key
                             className="h-8 w-8 p-0"
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
@@ -223,18 +290,18 @@ export function CartDialog() {
                         </TableCell>
                         <TableCell
                           className="align-middle hover:cursor-pointer"
-                          onClick={() => toggleItemSelection(item.product_id)}
+                          onClick={(e) => { e.stopPropagation(); toggleItemSelection(item.product_id, item.sku); }} // Use composite key
                         >
                           <Checkbox
-                            checked={selectedItems.includes(item.product_id)}
-                            onCheckedChange={() => toggleItemSelection(item.product_id)}
+                            checked={selectedItems.includes(getItemKey(item))} // Use composite key
+                            onCheckedChange={() => toggleItemSelection(item.product_id, item.sku)} // Use composite key
                             className="cursor-pointer"
                           />
                         </TableCell>
                         <TableCell>
                           <img
                             src={item.image_url || "https://placehold.co/100"}
-                            alt={item.product_name}
+                            alt={item.product_name + (item.variant_name ? ` - ${item.variant_name}` : '')}
                             className="w-[100px] h-[100px] object-cover"
                           />
                         </TableCell>
@@ -242,16 +309,23 @@ export function CartDialog() {
                           <span className="block">
                             {item.product_name}
                           </span>
+                          {/* Display Variant Name or SKU */}
+                          {(item.variant_name || item.sku) && (
+                            <span className="block text-sm text-muted-foreground">
+                              {item.variant_name || `SKU: ${item.sku}`}
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center gap-2" onClick={(e: React.MouseEvent<HTMLElement>) => e.stopPropagation()}>
-                            <QuantityInput 
+                          <div className="flex items-center justify-center gap-2" onClick={(e: React.MouseEvent<HTMLElement>) => e.stopPropagation()}> {/* Centered */}
+                            <QuantityInput
                               value={item.quantity}
-                              onChange={(newValue) => handleQuantityChange(item.product_id, newValue)}
+                              onChange={(newValue) => handleQuantityChange(item.product_id, item.sku, newValue)} // Use composite key
                               min={1}
                               max={item.stock}
                             />
                           </div>
+                           <span className="text-xs text-muted-foreground block mt-1">Stock: {item.stock}</span>
                         </TableCell>
                         <TableCell className="text-right">
                           ₱{(item.store_price * item.quantity).toLocaleString()}
@@ -274,29 +348,37 @@ export function CartDialog() {
               <div className="md:hidden space-y-3 overflow-y-auto max-h-[60vh]">
                 {cartItems.map((item) => (
                   <div
-                    key={item.product_id}
+                    key={getItemKey(item)} // Use composite key
                     className="relative bg-card rounded-lg shadow p-4 border flex flex-col gap-3 cursor-pointer"
-                    onClick={() => toggleItemSelection(item.product_id)}
+                    onClick={() => toggleItemSelection(item.product_id, item.sku)} // Use composite key
                   >
                     <div className="flex items-start gap-3">
-                      <Checkbox 
-                        checked={selectedItems.includes(item.product_id)}
-                        onCheckedChange={() => toggleItemSelection(item.product_id)}
+                      <Checkbox
+                        checked={selectedItems.includes(getItemKey(item))} // Use composite key
+                        onCheckedChange={() => toggleItemSelection(item.product_id, item.sku)} // Use composite key
                         className="mt-1"
                       />
                       <img
                         src={item.image_url || "https://placehold.co/60"}
-                        alt={item.product_name}
+                        alt={item.product_name + (item.variant_name ? ` - ${item.variant_name}` : '')}
                         className="w-[60px] h-[60px] object-cover rounded"
                       />
                       <div className="flex-1 min-h-[60px] flex flex-col justify-between">
-                        <span className="font-medium line-clamp-2">
-                          {item.product_name}
-                        </span>
+                        <div>
+                          <span className="font-medium line-clamp-2">
+                            {item.product_name}
+                          </span>
+                           {/* Display Variant Name or SKU */}
+                           {(item.variant_name || item.sku) && (
+                            <span className="block text-sm text-muted-foreground">
+                              {item.variant_name || `SKU: ${item.sku}`}
+                            </span>
+                          )}
+                        </div>
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={(e) => { e.stopPropagation(); handleRemoveItem(item.product_id); }}
+                          onClick={(e) => { e.stopPropagation(); handleRemoveItem(item.product_id, item.sku); }} // Use composite key
                           className="h-6 w-6 p-0 self-end"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -305,18 +387,19 @@ export function CartDialog() {
                     </div>
 
                     <div
-                      className="flex items-center px-2 py-1 bg-muted/30 rounded"
+                      className="flex items-center justify-between px-2 py-1 bg-muted/30 rounded"
                       onClick={(e: React.MouseEvent<HTMLElement>) => e.stopPropagation()}
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">Quantity:</span>
-                        <QuantityInput 
-                          value={item.quantity} 
-                          onChange={(newValue) => handleQuantityChange(item.product_id, newValue)}
+                        <QuantityInput
+                          value={item.quantity}
+                          onChange={(newValue) => handleQuantityChange(item.product_id, item.sku, newValue)} // Use composite key
                           min={1}
                           max={item.stock}
                         />
                       </div>
+                       <span className="text-xs text-muted-foreground">Stock: {item.stock}</span>
                     </div>
 
                     <div className="flex items-center px-2 py-1 bg-muted/30 rounded">
@@ -329,7 +412,7 @@ export function CartDialog() {
                     </div>
                   </div>
                 ))}
-                
+
                 {cartItems.length > 0 && (
                   <div className="sticky bottom-0 bg-background border-t p-4 shadow-lg">
                     <div className="flex justify-between items-center">

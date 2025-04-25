@@ -18,8 +18,16 @@ import { LogInDialog } from "@/components/dialogs/LogInDialog";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
+  // DialogDescription, // Removed if not used
 } from "@/components/ui/dialog";
+
+interface ProductVariant {
+  sku: string;
+  variant_name: string | null;
+  quantity: number;
+  store_price: number;
+  image_url: string | null;
+}
 
 interface Product {
   product_id: string;
@@ -27,11 +35,11 @@ interface Product {
   brand: string;
   product_name: string;
   status: string;
-  quantity: number;
-  store_price: number;
-  image_url: string;
+  quantity: number; // Base product quantity (might be sum of variants or fallback)
+  store_price: number; // Base product price (fallback)
+  image_url: string; // Base product image (fallback)
   description?: string;
-  variants: any;
+  variants: ProductVariant[]; // Now strongly typed
 }
 
 function ProductDetail() {
@@ -47,6 +55,14 @@ function ProductDetail() {
   const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
+
+  // Helper to get the currently selected variant details
+  const getSelectedVariant = useCallback((): ProductVariant | null => {
+    if (!product || !product.variants || product.variants.length === 0) {
+      return product?.variants?.[selectedVariantIndex] ?? null;
+    }
+    return product.variants[selectedVariantIndex];
+  }, [product, selectedVariantIndex]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -74,57 +90,71 @@ function ProductDetail() {
     fetchProduct();
   }, [searchParams]);
 
-  // Check if this product is already in user's cart (via localStorage)
+  // Check if the *specific selected variant* is already in user's cart
   useEffect(() => {
     if (!currentUser || currentUser.role === 'admin' || !product) return;
+
+    const selectedVariant = getSelectedVariant();
+    if (!selectedVariant) return; // Don't check if no variant is selected/available
+
     const stored = localStorage.getItem('cartItems');
-    const items = stored ? JSON.parse(stored) : [];
-    const exists = items.some((item: any) => item.product_id === product.product_id);
+    const items: Array<{ product_id: string; sku: string; quantity: number }> = stored ? JSON.parse(stored) : [];
+    const exists = items.some(item => item.product_id === product.product_id && item.sku === selectedVariant.sku);
     setIsInCart(exists);
-  }, [currentUser, product]);
+    // Reset quantity to 1 if the variant changes and is not in the cart
+    if (!exists) {
+        setQuantity(1);
+    } else {
+        // If it is in the cart, potentially set quantity from cart? Or keep 1? Let's keep 1 for now.
+        // const cartItem = items.find(item => item.product_id === product.product_id && item.sku === selectedVariant.sku);
+        // setQuantity(cartItem ? cartItem.quantity : 1);
+        setQuantity(1); // Keep it simple: always reset to 1 on variant select/load
+    }
+
+  }, [currentUser, product, selectedVariantIndex, getSelectedVariant]); // Depend on selectedVariantIndex
 
   const handleAddToCart = useCallback(() => {
     if (!product) return;
+    const selectedVariant = getSelectedVariant();
+    if (!selectedVariant) {
+      toast.error("Please select a variant."); // Or handle products without variants differently
+      return;
+    }
 
-    // Update cartItems in localStorage
     setIsLoading(true);
     const stored = localStorage.getItem('cartItems');
-    const items = stored ? JSON.parse(stored) : [];
+    // Ensure items are correctly typed
+    const items: Array<{ product_id: string; sku: string; quantity: number }> = stored ? JSON.parse(stored) : [];
+
     if (isInCart) {
-      const updated = items.filter((item: any) => item.product_id !== product.product_id);
+      // Remove the specific variant
+      const updated = items.filter(item => !(item.product_id === product.product_id && item.sku === selectedVariant.sku));
       localStorage.setItem('cartItems', JSON.stringify(updated));
-      toast.success("Item removed from cart");
+      toast.success(`${product.product_name} (${selectedVariant.variant_name || selectedVariant.sku}) removed from cart`);
       setIsInCart(false);
     } else {
-      const updated = [...items, { product_id: product.product_id, quantity }];
+      // Add the specific variant
+      const newItem = {
+        product_id: product.product_id,
+        sku: selectedVariant.sku, // Add SKU
+        quantity: quantity // Use the current quantity state
+      };
+      const updated = [...items, newItem];
       localStorage.setItem('cartItems', JSON.stringify(updated));
-      toast.success("Item added to cart");
+      toast.success(`${product.product_name} (${selectedVariant.variant_name || selectedVariant.sku}) added to cart`);
       setIsInCart(true);
     }
     setIsLoading(false);
-  }, [isInCart, product, quantity]);
+  }, [isInCart, product, quantity, selectedVariantIndex, getSelectedVariant]); // Add dependencies
 
-  if (loading) {
-    return <div className="w-full text-center py-8">Loading product details...</div>;
-  }
+  // Handlers for quantity buttons
+  const incrementQuantity = () => {
+    setQuantity(prev => Math.min(displayStock, prev + 1));
+  };
 
-  if (error || !product) {
-    return <div className="w-full text-center py-8 text-red-500">{error || 'Product not found'}</div>;
-  }
-
-  // Use selected variant for display
-  const selectedVariant = product.variants?.[selectedVariantIndex] || product.variants?.[0];
-  const displayImage = imageError || !selectedVariant?.image_url ? sample : selectedVariant.image_url;
-  const displayPrice = selectedVariant?.store_price ?? product.store_price;
-  const displayStock = selectedVariant?.quantity ?? product.quantity;
-
-  // Format price using Intl.NumberFormat for consistent formatting
-  const formattedPrice = new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(displayPrice);
+  const decrementQuantity = () => {
+    setQuantity(prev => Math.max(1, prev - 1));
+  };
 
   const renderActionButton = () => {
     if (!product || displayStock === 0) return null;
@@ -133,43 +163,51 @@ function ProductDetail() {
     }
     // show add/remove to cart for all users (including guests)
     return (
-      <div className="flex flex-col gap-2 items-start">
-        {/* Variant Selector above quantity control */}
-        {product.variants && product.variants.length > 1 && (
-          <div className="flex gap-2 mb-2">
-            {product.variants.map((variant: any, idx: number) => (
+      <div className="flex flex-col gap-4 items-center w-full">
+        {/* Variant Selector */}
+        {product.variants && product.variants.length > 0 && (
+          <div className="grid grid-cols-2 gap-2 mb-2 w-full max-w-sm">
+            {product.variants.map((variant: ProductVariant, idx: number) => (
               <Button
-                key={variant.sku || idx}
+                key={`${variant.sku || idx}`} // Use SKU as key if available, fallback to index
                 size="sm"
                 variant={selectedVariantIndex === idx ? 'default' : 'outline'}
                 onClick={() => {
                   setSelectedVariantIndex(idx);
-                  setImageError(false);
+                  setImageError(false); // Reset image error on variant change
                 }}
+                className="w-full"
               >
-                {variant.sku || `Variant ${idx + 1}`}
+                {variant.variant_name || `Variant ${idx + 1}`}
               </Button>
             ))}
           </div>
         )}
-        <div className="flex items-center gap-2">
-          <label htmlFor="quantity" className="text-sm">Qty:</label>
-          <input
-            id="quantity"
-            type="number"
-            min={1}
-            max={displayStock}
-            value={quantity}
-            onChange={e => setQuantity(Math.max(1, Math.min(displayStock, Number(e.target.value))))}
-            className="w-16 border rounded px-2 py-1 text-center"
-          />
-          <span className="text-xs text-gray-500">/ {displayStock} in stock</span>
-        </div>
+        {/* Quantity Control */}
+        <div className="flex items-center justify-center gap-2">
+           <Button size="icon" variant="outline" onClick={decrementQuantity} disabled={quantity <= 1}>
+             -
+           </Button>
+           <input
+             id="quantity"
+             type="number"
+             min={1}
+             max={displayStock} // Use variant stock
+             value={quantity}
+             onChange={e => setQuantity(Math.max(1, Math.min(displayStock, Number(e.target.value))))}
+             className="w-16 border rounded px-2 py-1 text-center"
+           />
+           <Button size="icon" variant="outline" onClick={incrementQuantity} disabled={quantity >= displayStock}> {/* Use variant stock */}
+             +
+           </Button>
+         </div>
+         <span className="text-xs text-gray-500">/ {displayStock} in stock</span> {/* Use variant stock */}
+        {/* Add to Cart Button */}
         <Button
           className="w-48"
           variant={isInCart ? "destructive" : "default"}
           onClick={handleAddToCart}
-          disabled={isLoading || displayStock === 0}
+          disabled={isLoading || displayStock === 0} // Disable if variant stock is 0
         >
           {isInCart ? (
             <>
@@ -187,11 +225,34 @@ function ProductDetail() {
     );
   };
 
+  if (loading) {
+    return <div className="w-full text-center py-8">Loading product details...</div>;
+  }
+
+  if (error || !product) {
+    return <div className="w-full text-center py-8 text-red-500">{error || 'Product not found'}</div>;
+  }
+
+  // Use selected variant for display
+  const selectedVariant = getSelectedVariant();
+  // Fallback logic needs refinement if product structure guarantees variants
+  const displayImage = imageError || !selectedVariant?.image_url ? (product?.image_url || sample) : selectedVariant.image_url;
+  const displayPrice = selectedVariant?.store_price ?? product?.store_price ?? 0; // Fallback needed
+  const displayStock = selectedVariant?.quantity ?? 0; // Use variant stock, default 0
+
+  // Format price using Intl.NumberFormat for consistent formatting
+  const formattedPrice = new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(displayPrice);
+
   return (
     <>
-      {/* Desktop Layout: visible on md and above */}
+      {/* Desktop Layout */}
       <div className="hidden md:flex flex-row gap-8 items-start py-24 pb-40">
-        {/* Left: Image only */}
+        {/* Left: Image */}
         <div className="flex-1 flex justify-center items-center">
           <div 
             className="aspect-square w-full max-w-[400px] relative cursor-pointer"
@@ -206,11 +267,15 @@ function ProductDetail() {
           </div>
         </div>
         {/* Right: Details */}
-        <div className="flex-1 flex flex-col gap-4 justify-center">
-          <div className="flex flex-row gap-4 items-center">
-            <p className="text-4xl font-bold truncate">{product.product_name}</p>
-          </div>
-          <h1 className="text-4xl font-bold">{formattedPrice}</h1>
+        <div className="flex-1 flex flex-col gap-4 justify-center items-center text-center">
+          {/* Centered and Larger Product Name */}
+          <p className="text-5xl font-bold truncate text-center">{product.product_name}</p>
+          {/* Display Variant Name if applicable */}
+          {selectedVariant?.variant_name && (
+            <p className="text-xl text-muted-foreground">{selectedVariant.variant_name}</p>
+          )}
+          {/* Centered and Smaller Price */}
+          <h1 className="text-3xl font-bold text-center">{formattedPrice}</h1>
           <div className="text-lg text-gray-600">Stocks left: <span className="font-semibold">{displayStock}</span></div>
           {/* Display product description if available */}
           {product.description && (
@@ -220,14 +285,14 @@ function ProductDetail() {
             </div>
           )}
           <p className="text-xs text-gray-500 italic mb-2">Prices are subject to change without prior notice.</p>
-          {/* Place variant selector above quantity control in action button */}
-          <div className="flex flex-row gap-4 items-center">
+          {/* Render Action Button (already centered internally) */}
+          <div className="flex flex-row gap-4 items-center justify-center w-full mt-4">
             {renderActionButton()}
           </div>
         </div>
       </div>
 
-      {/* Mobile Layout: visible on small devices */}
+      {/* Mobile Layout */}
       <div className="md:hidden flex flex-col gap-4 py-6">
         {/* Info part comes first */}
         <div className="w-full text-center p-4">
@@ -242,13 +307,17 @@ function ProductDetail() {
               onError={() => setImageError(true)}
             />
           </div>
-          <div className="flex flex-row gap-4 items-center p-4">
-            <p className="text-base md:text-4xl">
-              {product.product_name}
-            </p>
-          </div>
-          <h1 className="text-4xl font-bold mb-2">{formattedPrice}</h1>
-          <div className="text-lg text-gray-600 mb-2">Stocks left: <span className="font-semibold">{displayStock}</span></div>
+          {/* Centered and Larger Product Name (Mobile) */}
+          <p className="text-2xl font-bold text-center mb-2">
+            {product.product_name}
+          </p>
+          {/* Display Variant Name if applicable */}
+          {selectedVariant?.variant_name && (
+            <p className="text-lg text-muted-foreground mb-2">{selectedVariant.variant_name}</p>
+          )}
+          {/* Centered and Smaller Price (Mobile) */}
+          <h1 className="text-2xl font-bold mb-2 text-center">{formattedPrice}</h1>
+          <div className="text-base text-gray-600 mb-2">Stocks left: <span className="font-semibold">{displayStock}</span></div>
           {/* Display product description on mobile layout */}
           {product.description && (
             <div className="mb-4 px-2">
@@ -257,8 +326,8 @@ function ProductDetail() {
             </div>
           )}
           <p className="text-xs text-gray-500 italic mb-2">Prices are subject to change without prior notice.</p>
-          {/* Place variant selector above quantity control in action button (mobile) */}
-          <div className="flex flex-row gap-4 justify-center">
+          {/* Render Action Button (already centered internally) */}
+          <div className="flex flex-col gap-4 items-center justify-center w-full mt-4">
             {renderActionButton()}
           </div>
         </div>
