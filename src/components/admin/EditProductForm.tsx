@@ -384,7 +384,13 @@ export function EditProductForm({ initialData, onSuccess }: EditProductFormProps
   // Watch quantity and update status automatically
   const watchedQuantity = quantity;
   useEffect(() => {
-    setStatus(watchedQuantity > 0 ? "In Stock" : "Out of Stock");
+    if (watchedQuantity === 0) {
+      setStatus("Out of Stock");
+    } else if (watchedQuantity <= 10) {
+      setStatus("Low Stock");
+    } else {
+      setStatus("In Stock");
+    }
   }, [watchedQuantity]);
 
   // Handler for quantity increment/decrement

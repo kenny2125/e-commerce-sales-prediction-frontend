@@ -83,7 +83,29 @@ export function Inventory() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const result = await response.json();
-      setData(result);
+      
+      // Process the data to add the correct status
+      const processedData = result.map((product: any) => {
+        // Use total_quantity for status determination and overall quantity
+        const totalQuantity = parseInt(product.total_quantity) || 0;
+        
+        let status = "In Stock";
+        if (totalQuantity === 0) {
+          status = "Out of Stock";
+        } else if (totalQuantity <= 10) {
+          status = "Low Stock";
+        }
+        
+        return {
+          ...product,
+          quantity: totalQuantity, // Set quantity to total_quantity for other components
+          status,
+          // Ensure variant_count is available
+          variant_count: parseInt(product.variant_count) || 0
+        };
+      });
+      
+      setData(processedData);
     } catch (error: any) {
       console.error("Failed to fetch products:", error);
       setError(`Failed to fetch products: ${error.message}. Please try again.`);

@@ -30,11 +30,13 @@ export type Inventory = {
   category: string;
   brand: string;
   product_name: string;
-  status: "In Stock" | "Out of Stock";
+  status: "In Stock" | "Low Stock" | "Out of Stock";
   quantity: number;
   store_price: number;
   image_url?: string;
   variants?: ProductVariant[]; // Add optional variants array
+  variant_count?: number;     // Number of variants
+  total_quantity?: number;    // Total quantity across all variants
 };
 
 // Define ProductVariant type (copy from EditProductForm.tsx or define globally)
@@ -54,6 +56,25 @@ type ProductVariant = {
 // Define the columns as a function that accepts refreshData
 export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
   {
+    accessorKey: "id",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          ID
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="flex items-center justify-center">
+        {row.getValue("id")}
+      </div>
+    ),
+  },
+  {
     accessorKey: "category",
     header: ({ column }) => {
       return (
@@ -67,7 +88,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
       );
     },
     cell: ({ row }) => (
-      <div className="capitalize pl-4">
+      <div className="flex items-center justify-center">
         {row.getValue("category")}
       </div>
     ),
@@ -86,7 +107,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
       );
     },
     cell: ({ row }) => (
-      <div className="capitalize pl-4">
+      <div className="flex items-center justify-center">
         {row.getValue("brand")}
       </div>
     ),
@@ -105,7 +126,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
       );
     },
     cell: ({ row }) => (
-      <div className="capitalize pl-4">
+      <div className="flex items-center justify-center">
         {row.getValue("product_name")}
       </div>
     ),
@@ -129,8 +150,14 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
       return (
         <div className="flex items-center justify-center px-4">
           <Badge 
-            variant={status === "In Stock" ? "default" : "destructive"} 
-            className={status === "In Stock" ? "bg-green-500 hover:bg-green-600" : ""}
+            variant={status === "Out of Stock" ? "destructive" : "default"} 
+            className={
+              status === "In Stock" 
+                ? "bg-green-500 hover:bg-green-600" 
+                : status === "Low Stock" 
+                  ? "bg-yellow-500 hover:bg-yellow-600" 
+                  : ""
+            }
           >
             {status}
           </Badge>
@@ -152,9 +179,15 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
       );
     },
     cell: ({ row }) => {
+      const variantCount = parseInt(row.original.variant_count as unknown as string) || 0;
+      const totalQuantity = parseInt(row.original.total_quantity as unknown as string) || 0;
+      
       return (
         <div className="text-center">
-          {row.getValue("variant_amounts")}
+          <div className="flex flex-col items-center">
+            <span className="font-medium">{variantCount} variant{variantCount !== 1 ? 's' : ''}</span>
+            <span className="text-xs text-muted-foreground">Total Qty: {totalQuantity}</span>
+          </div>
         </div>
       );
     },
@@ -218,7 +251,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
       };
 
       return (
-        <>
+        <div className="flex items-center justify-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
@@ -294,7 +327,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
               />
             </DialogContent>
           </Dialog>
-        </>
+        </div>
       );
     },
     enableSorting: false,
