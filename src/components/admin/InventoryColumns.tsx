@@ -25,6 +25,7 @@ import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 // Define the Inventory type here
 export type Inventory = {
+  id: number;
   product_id: string;
   category: string;
   brand: string;
@@ -276,23 +277,33 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
         try {
           setIsDeleting(true);
           const token = localStorage.getItem("token");
+          
+          // Check for both product_id and id as the backend uses 'id'
+          const productId = product.product_id || product.id;
+          
+          // Verify product ID exists and is valid before sending the request
+          if (!productId) {
+            throw new Error("Product ID is missing");
+          }
+          
           const response = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/product/${product.product_id}`,
+            `${import.meta.env.VITE_API_URL}/api/product/${productId}`,
             {
               method: "DELETE",
               headers: {
                 Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
               },
             }
           );
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({
-              message: "Unknown error",
+              message: "Unknown error occurred while deleting the product",
             }));
             throw new Error(
               `HTTP error! status: ${response.status}, Message: ${
-                errorData.message || "Failed to delete"
+                errorData.message || "Failed to delete product"
               }`
             );
           }
