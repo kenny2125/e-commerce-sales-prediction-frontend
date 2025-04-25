@@ -82,8 +82,12 @@ export function Orders() {
     });
   };
 
-  const getPaymentStatusBadge = (status: string) => {
-    let className = "";
+  const getPaymentStatusBadge = (status: string | undefined | null) => {
+    let className = "bg-gray-500"; // Default color
+    
+    if (!status) {
+      return <Badge variant="outline" className={className}>Unknown</Badge>;
+    }
     
     switch (status.toLowerCase()) {
       case 'paid':
@@ -105,8 +109,12 @@ export function Orders() {
     return <Badge variant="outline" className={className}>{status}</Badge>;
   };
 
-  const getPickupStatusBadge = (status: string) => {
-    let className = "";
+  const getPickupStatusBadge = (status: string | undefined | null) => {
+    let className = "bg-gray-500"; // Default color
+    
+    if (!status) {
+      return <Badge variant="outline" className={className}>Unknown</Badge>;
+    }
     
     switch (status.toLowerCase()) {
       case 'claimed':

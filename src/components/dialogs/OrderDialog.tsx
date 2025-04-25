@@ -253,7 +253,8 @@ export function OrderDialog() {
                           <TableCell className="hidden md:table-cell">
                             <span className={`capitalize ${
                               order.pickupStatus === 'Claimed' ? 'text-green-600' :
-                              order.pickupStatus === 'Ready to Claim' ? 'text-yellow-600' :
+                              order.pickupStatus === 'Preparing' ? 'text-yellow-600' :
+                              order.pickupStatus === 'On Delivery' ? 'text-blue-600' :
                               order.pickupStatus === 'Cancelled' ? 'text-red-600' :
                               'text-gray-600'
                             }`}>

@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Printer } from 'lucide-react';
@@ -39,6 +39,8 @@ export interface OrderDetail {
   contactNumber: string;
   notes?: string;
   items: OrderItem[];
+  paymentMethod?: string;
+  pickupMethod?: string;
 }
 
 interface OrderDetailDialogProps {
@@ -80,7 +82,8 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
   const getPickupStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'claimed': return 'bg-green-500 text-white';
-      case 'ready to claim': return 'bg-blue-500 text-white';
+      case 'preparing': return 'bg-yellow-500 text-white';
+      case 'on delivery': return 'bg-blue-500 text-white';
       case 'cancelled': return 'bg-red-500 text-white';
       default: return 'bg-gray-500 text-white';
     }
@@ -209,6 +212,8 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
           <div><span class="label">Customer:</span> ${order.customerName}</div>
           <div><span class="label">Address:</span> ${order.address}</div>
           <div><span class="label">Contact:</span> ${order.contactNumber}</div>
+          ${order.paymentMethod ? `<div><span class="label">Payment Method:</span> ${order.paymentMethod}</div>` : ''}
+          ${order.pickupMethod ? `<div><span class="label">Delivery Method:</span> ${order.pickupMethod}</div>` : ''}
           <div><span class="label">Payment Status:</span> ${paymentStatus}</div>
           <div><span class="label">Pickup Status:</span> ${pickupStatus}</div>
           ${order.notes ? `<div><span class="label">Notes:</span> ${order.notes}</div>` : ''}
@@ -276,6 +281,9 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
         <div className="flex flex-col h-full overflow-hidden">
           <DialogHeader className="p-5 pb-2 border-b">
             <DialogTitle className="text-2xl font-bold">Order #{order.orderID}</DialogTitle>
+            <DialogDescription>
+              Order details and status information
+            </DialogDescription>
           </DialogHeader>
           
           <div className="flex-1 overflow-auto px-6">
@@ -301,6 +309,18 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
                       <dt className="font-medium text-gray-600 dark:text-gray-300">Contact Number:</dt>
                       <dd className="font-semibold">{order.contactNumber}</dd>
                     </div>
+                    {order.paymentMethod && (
+                      <div className="grid grid-cols-2 py-2">
+                        <dt className="font-medium text-gray-600 dark:text-gray-300">Payment Method:</dt>
+                        <dd className="font-semibold">{order.paymentMethod}</dd>
+                      </div>
+                    )}
+                    {order.pickupMethod && (
+                      <div className="grid grid-cols-2 py-2">
+                        <dt className="font-medium text-gray-600 dark:text-gray-300">Delivery Method:</dt>
+                        <dd className="font-semibold">{order.pickupMethod}</dd>
+                      </div>
+                    )}
                     {order.notes && (
                       <div className="grid grid-cols-2 py-2">
                         <dt className="font-medium text-gray-600 dark:text-gray-300">Notes:</dt>
@@ -347,8 +367,11 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Ready to Claim" className="bg-blue-500 text-white my-1">
-                              Ready to Claim
+                            <SelectItem value="Preparing" className="bg-yellow-500 text-white my-1">
+                              Preparing
+                            </SelectItem>
+                            <SelectItem value="On Delivery" className="bg-blue-500 text-white my-1">
+                              On Delivery
                             </SelectItem>
                             <SelectItem value="Claimed" className="bg-green-500 text-white my-1">
                               Claimed
