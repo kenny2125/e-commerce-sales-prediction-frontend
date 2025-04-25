@@ -265,7 +265,7 @@ export default function Dashboard() {
         {/* Small cards grid on right - Now a flex column with full height */}
         <div className="flex flex-col gap-4 h-full">
           {/* Recent Sales - with scrollable content */}
-          <Card className="flex-1">
+          {/* <Card className="flex-1">
             <CardHeader>
               <CardTitle className="text-lg">Recent Sales</CardTitle>
             </CardHeader>
@@ -282,9 +282,9 @@ export default function Dashboard() {
                 ))}
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
           {/* Stock Alerts - with scrollable content */}
-          <Card className="flex-1">
+          {/* <Card className="flex-1">
             <CardHeader>
               <CardTitle className="text-lg">Stock Alerts</CardTitle>
               <CardDescription>Low stock items</CardDescription>
@@ -308,7 +308,7 @@ export default function Dashboard() {
                 ))}
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
       </div>
 
