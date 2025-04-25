@@ -1,22 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import {
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Popover,
@@ -40,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useNavigate } from "react-router-dom";
 
 type ProductVariant = {
   id?: number;
@@ -50,31 +37,18 @@ type ProductVariant = {
   quantity: number;
   image_url?: string;
   image?: File;
+  hasImage?: boolean;
 };
 
 type FormData = {
-  product_id: string;
   category: string;
   brand: string;
   product_name: string;
   quantity: number;
-  store_price: string; // Store as string in form, transform to number on submit
-  image?: FileList;
+  store_price: string;
   description?: string;
-  variants?: ProductVariant[];
+  variants: ProductVariant[];
 };
-
-const formSchema = z.object({
-  category: z.string().min(2).max(100),
-  brand: z.string().min(2).max(100),
-  product_name: z.string().min(2).max(255),
-  quantity: z.coerce.number().min(0),
-  store_price: z.string().regex(/^[\d,]*\.?\d*$/, "Invalid price format"),
-  image: z.instanceof(FileList).optional(),
-  description: z.string().optional(), // Keep description field
-});
-
-type FormSchema = z.infer<typeof formSchema>;
 
 interface AddProductFormProps {
   onSuccess?: () => void;
@@ -88,11 +62,30 @@ export function AddProductForm({ onSuccess }: AddProductFormProps) {
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   
+  // Form state
+  const [formData, setFormData] = React.useState<FormData>({
+    category: "",
+    brand: "",
+    product_name: "",
+    quantity: 0,
+    store_price: "",
+    description: "",
+    variants: []
+  });
+  
+  // Form validation state
+  const [formErrors, setFormErrors] = React.useState<{
+    [key: string]: string;
+  }>({});
+  
   // State for managing product variants
   const [variants, setVariants] = React.useState<ProductVariant[]>([]);
   const [editingVariant, setEditingVariant] = React.useState<ProductVariant | null>(null);
   const [showVariantForm, setShowVariantForm] = React.useState(false);
   const [variantFormError, setVariantFormError] = React.useState<string | null>(null);
+  
+  // Image state
+  const [mainImage, setMainImage] = React.useState<File | null>(null);
   
   const formatPrice = (price: number | string | null | undefined): string => {
     if (price == null || price === '') {
@@ -113,16 +106,22 @@ export function AddProductForm({ onSuccess }: AddProductFormProps) {
     });
   };
 
-  const form = useForm<FormSchema>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      category: "",
-      brand: "",
-      product_name: "",
-      quantity: 0,
-      store_price: "",
-    },
-  });
+  // Handle form field changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear validation error when field is changed
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
 
   // Handle adding a new variant
   const handleAddVariant = () => {
@@ -170,7 +169,6 @@ export function AddProductForm({ onSuccess }: AddProductFormProps) {
     }
     
     // Just save the variant with the file for upload to Cloudinary later
-    // DO NOT create blob URLs here as they're not valid for storage
     let variantToSave = { ...editingVariant };
     
     // Add or update variant
@@ -237,14 +235,15 @@ export function AddProductForm({ onSuccess }: AddProductFormProps) {
       // Update the editingVariant with the new image
       setEditingVariant({
         ...editingVariant,
-        image: processed
+        image: processed,
+        hasImage: true
       });
     } else {
       setVariantFileName('');
       setVariantPreviewSrc(editingVariant.image_url || ImagePlaceholder);
       
       // Remove image from editingVariant
-      const { image, ...variantWithoutImage } = editingVariant;
+      const { image, hasImage, ...variantWithoutImage } = editingVariant;
       setEditingVariant(variantWithoutImage);
     }
   };
@@ -307,7 +306,10 @@ export function AddProductForm({ onSuccess }: AddProductFormProps) {
   const handleAddCategory = () => {
     if (newCategory && !categories.includes(newCategory)) {
       setCategories([...categories, newCategory]);
-      form.setValue("category", newCategory);
+      setFormData(prev => ({
+        ...prev,
+        category: newCategory
+      }));
       setNewCategory("");
       setIsAddingCategory(false);
     }
@@ -317,7 +319,10 @@ export function AddProductForm({ onSuccess }: AddProductFormProps) {
   const handleAddBrand = () => {
     if (newBrand && !brands.includes(newBrand)) {
       setBrands([...brands, newBrand]);
-      form.setValue("brand", newBrand);
+      setFormData(prev => ({
+        ...prev,
+        brand: newBrand
+      }));
       setNewBrand("");
       setIsAddingBrand(false);
     }
@@ -370,75 +375,86 @@ export function AddProductForm({ onSuccess }: AddProductFormProps) {
       setSelectedFileName(file.name);
       const processed = await processImage(file);
       setPreviewSrc(URL.createObjectURL(processed));
-      const dt = new DataTransfer();
-      dt.items.add(processed);
-      form.setValue('image', dt.files, { shouldValidate: true });
+      setMainImage(processed);
     } else {
       setSelectedFileName('');
       setPreviewSrc(ImagePlaceholder);
-      form.setValue('image', undefined);
+      setMainImage(null);
     }
   };
 
-  // Watch quantity and update status automatically
-  const watchedQuantity = form.watch("quantity");
-  React.useEffect(() => {
-    form.setValue("status", watchedQuantity > 0 ? "In Stock" : "Out of Stock");
-  }, [watchedQuantity, form]);
-
   // Handler for quantity increment/decrement
   const handleQuantityChange = (change: number) => {
-    const current = form.getValues("quantity");
-    const newQty = Math.max(0, current + change);
-    form.setValue("quantity", newQty, { shouldValidate: true });
+    setFormData(prev => ({
+      ...prev,
+      quantity: Math.max(0, prev.quantity + change)
+    }));
   };
 
-  async function onSubmit(values: FormSchema) {
+  // Validate form before submission
+  const validateForm = (): boolean => {
+    const errors: {[key: string]: string} = {};
+    
+    if (!formData.category) {
+      errors.category = "Category is required";
+    }
+    
+    if (!formData.brand) {
+      errors.brand = "Brand is required";
+    }
+    
+    if (!formData.product_name) {
+      errors.product_name = "Product name is required";
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
       setFormMessage(null); // Clear previous messages
       const token = localStorage.getItem("token");
-      const formData = new FormData();
-
-      // Append all text fields
-      Object.entries(values).forEach(([key, value]) => {
-        if (key !== "image") {
-          if (key === "store_price" && typeof value === "string") {
-            // Convert formatted price string back to number before sending
-            formData.append(key, String(Number(value.replace(/,/g, ""))));
-          } else if (key === "description" && value) {
-            // Ensure description is sent as plain text
-            formData.append(key, String(value));
-          } else {
-            formData.append(key, String(value));
+      
+      // Prepare data for submission
+      const productData = {
+        ...formData,
+        variants: variants.map(variant => {
+          // Convert store_price from string to number if needed
+          const variantData = { ...variant };
+          if (typeof variantData.store_price === 'string') {
+            variantData.store_price = parseFloat(variantData.store_price.replace(/,/g, ''));
           }
+          return variantData;
+        })
+      };
+      
+      // Create FormData to handle file uploads
+      const formDataObj = new FormData();
+      
+      // Add main product data as JSON
+      formDataObj.append('productData', JSON.stringify(productData));
+      
+      // Add main image if available
+      if (mainImage) {
+        formDataObj.append('mainImage', mainImage);
+      }
+      
+      // Add variant images
+      variants.forEach((variant, index) => {
+        if (variant.image) {
+          formDataObj.append(`variantImage_${index}`, variant.image);
         }
       });
-
-      // Only append image if a new one is selected
-      if (values.image?.[0]) {
-        formData.append("image", values.image[0]);
-      }
-
-      // Process variants - Create FormData entries for each variant image
-      if (variants.length > 0) {
-        // Store variant images to send to server
-        variants.forEach((variant, index) => {
-          // If this variant has a File object for image, append it to formData
-          if (variant.image instanceof File) {
-            formData.append(`variantImage_${index}`, variant.image);
-            // Create a temporary variant object without the image File
-            const { image, ...variantWithoutImage } = variant;
-            // Mark this variant so backend knows it has an image to process
-            variantWithoutImage.hasImage = true;
-            // Update the variant in the array
-            variants[index] = variantWithoutImage;
-          }
-        });
-        
-        // Append the updated variants array as JSON
-        formData.append("variants", JSON.stringify(variants));
-      }
 
       const endpoint = `${import.meta.env.VITE_API_URL}/api/product`;
 
@@ -446,9 +462,9 @@ export function AddProductForm({ onSuccess }: AddProductFormProps) {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          // 'Content-Type' is not set for FormData; browser sets it with boundary
+          // Don't set Content-Type for FormData
         },
-        body: formData,
+        body: formDataObj,
       });
 
       if (!response.ok) {
@@ -473,20 +489,22 @@ export function AddProductForm({ onSuccess }: AddProductFormProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }
+  };
   
-  // Updated onChange handler: Only validates input, does not format
+  // Handle price input change
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Allow only digits, commas, and a single decimal point with up to 2 digits
     if (/^[\d,]*\.?\d{0,2}$/.test(value) || value === "") {
       // Directly set the potentially unformatted value if it's valid
-      form.setValue("store_price", value);
+      setFormData(prev => ({
+        ...prev,
+        store_price: value
+      }));
     }
-    // If the input is invalid, do nothing (prevents invalid characters)
   };
 
-  // New onBlur handler: Formats the price when the input loses focus
+  // Format price on blur
   const handlePriceBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (value) {
@@ -495,32 +513,44 @@ export function AddProductForm({ onSuccess }: AddProductFormProps) {
       const number = parseFloat(plainNumber);
       if (!isNaN(number)) {
         // Format using toLocaleString and update the form state
-        form.setValue(
-          "store_price",
-          number.toLocaleString("en-US", {
+        setFormData(prev => ({
+          ...prev,
+          store_price: number.toLocaleString("en-US", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           })
-        );
+        }));
       } else {
         // Handle cases where the input might be invalid after blur (e.g., just ".")
-        // Optionally clear or reset, here we just format 0.00
-         form.setValue("store_price", (0).toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }));
+        setFormData(prev => ({
+          ...prev,
+          store_price: ""
+        }));
       }
-    } else {
-        // If the field is empty on blur, set it to formatted zero or keep empty
-         form.setValue("store_price", ""); // Or format 0.00 if preferred
     }
   };
 
+  // Set category handler
+  const handleSetCategory = (category: string) => {
+    setFormData(prev => ({
+      ...prev,
+      category
+    }));
+  };
+
+  // Set brand handler
+  const handleSetBrand = (brand: string) => {
+    setFormData(prev => ({
+      ...prev,
+      brand
+    }));
+  };
+
   return (
-    <Form {...form} >
+    <div>
       {/* Use grid for two-column layout */}
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={handleSubmit}
         className="grid grid-cols-1 md:grid-cols-2 gap-6"
       >
         {/* Middle Column: Base Product Information */}
@@ -537,219 +567,205 @@ export function AddProductForm({ onSuccess }: AddProductFormProps) {
               {formMessage.message}
             </div>
           )}
-          <FormField
-            control={form.control}
-            name="category"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Category</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        className={cn(
-                          "w-full justify-between",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value
-                          ? categories.find(
-                              (category) => category === field.value
-                            ) || field.value
-                          : "Select category"}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0">
-                    <Command>
-                      <CommandInput
-                        placeholder="Search category..."
-                        className="h-9"
-                      />
-                      <CommandList>
-                        <CommandEmpty>
-                          {isLoadingCategories ? "Loading..." : "No category found."}
-                        </CommandEmpty>
-                        <CommandGroup>
-                          {categories.map((category) => (
-                            <CommandItem
-                              key={category}
-                              value={category}
-                              onSelect={() => {
-                                form.setValue("category", category);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  field.value === category
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              {category}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                        <CommandSeparator />
-                        <CommandGroup>
-                          {isAddingCategory ? (
-                            <div className="flex items-center p-2">
-                              <Input
-                                value={newCategory}
-                                onChange={(e) => setNewCategory(e.target.value)}
-                                className="flex-1 mr-2"
-                                placeholder="Enter new category"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    handleAddCategory();
-                                  }
-                                }}
-                              />
-                              <Button
-                                size="sm"
-                                onClick={handleAddCategory}
-                                disabled={!newCategory}
-                              >
-                                Add
-                              </Button>
-                            </div>
-                          ) : (
-                            <CommandItem
-                              onSelect={() => setIsAddingCategory(true)}
-                              className="text-primary"
-                            >
-                              <PlusCircle className="mr-2 h-4 w-4" />
-                              Add new category
-                            </CommandItem>
-                          )}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
+          <div className="flex flex-col">
+            <Label htmlFor="category">Category</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className={cn(
+                    "w-full justify-between",
+                    !formData.category && "text-muted-foreground"
+                  )}
+                >
+                  {formData.category
+                    ? categories.find(
+                        (category) => category === formData.category
+                      ) || formData.category
+                    : "Select category"}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0">
+                <Command>
+                  <CommandInput
+                    placeholder="Search category..."
+                    className="h-9"
+                  />
+                  <CommandList>
+                    <CommandEmpty>
+                      {isLoadingCategories ? "Loading..." : "No category found."}
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {categories.map((category) => (
+                        <CommandItem
+                          key={category}
+                          value={category}
+                          onSelect={() => handleSetCategory(category)}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              formData.category === category
+                                ? "opacity-100"
+                                : "opacity-0"
+                            )}
+                          />
+                          {category}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                    <CommandSeparator />
+                    <CommandGroup>
+                      {isAddingCategory ? (
+                        <div className="flex items-center p-2">
+                          <Input
+                            value={newCategory}
+                            onChange={(e) => setNewCategory(e.target.value)}
+                            className="flex-1 mr-2"
+                            placeholder="Enter new category"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleAddCategory();
+                              }
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={handleAddCategory}
+                            disabled={!newCategory}
+                          >
+                            Add
+                          </Button>
+                        </div>
+                      ) : (
+                        <CommandItem
+                          onSelect={() => setIsAddingCategory(true)}
+                          className="text-primary"
+                        >
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          Add new category
+                        </CommandItem>
+                      )}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            {formErrors.category && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>
             )}
-          />
-          <FormField
-            control={form.control}
-            name="brand"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Brand</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        className={cn(
-                          "w-full justify-between",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value
-                          ? brands.find(
-                              (brand) => brand === field.value
-                            ) || field.value
-                          : "Select brand"}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0">
-                    <Command>
-                      <CommandInput
-                        placeholder="Search brand..."
-                        className="h-9"
-                      />
-                      <CommandList>
-                        <CommandEmpty>
-                          {isLoadingBrands ? "Loading..." : "No brand found."}
-                        </CommandEmpty>
-                        <CommandGroup>
-                          {brands.map((brand) => (
-                            <CommandItem
-                              key={brand}
-                              value={brand}
-                              onSelect={() => {
-                                form.setValue("brand", brand);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  field.value === brand
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              {brand}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                        <CommandSeparator />
-                        <CommandGroup>
-                          {isAddingBrand ? (
-                            <div className="flex items-center p-2">
-                              <Input
-                                value={newBrand}
-                                onChange={(e) => setNewBrand(e.target.value)}
-                                className="flex-1 mr-2"
-                                placeholder="Enter new brand"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    handleAddBrand();
-                                  }
-                                }}
-                              />
-                              <Button
-                                size="sm"
-                                onClick={handleAddBrand}
-                                disabled={!newBrand}
-                              >
-                                Add
-                              </Button>
-                            </div>
-                          ) : (
-                            <CommandItem
-                              onSelect={() => setIsAddingBrand(true)}
-                              className="text-primary"
-                            >
-                              <PlusCircle className="mr-2 h-4 w-4" />
-                              Add new brand
-                            </CommandItem>
-                          )}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
+          </div>
+          <div className="flex flex-col">
+            <Label htmlFor="brand">Brand</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className={cn(
+                    "w-full justify-between",
+                    !formData.brand && "text-muted-foreground"
+                  )}
+                >
+                  {formData.brand
+                    ? brands.find(
+                        (brand) => brand === formData.brand
+                      ) || formData.brand
+                    : "Select brand"}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0">
+                <Command>
+                  <CommandInput
+                    placeholder="Search brand..."
+                    className="h-9"
+                  />
+                  <CommandList>
+                    <CommandEmpty>
+                      {isLoadingBrands ? "Loading..." : "No brand found."}
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {brands.map((brand) => (
+                        <CommandItem
+                          key={brand}
+                          value={brand}
+                          onSelect={() => handleSetBrand(brand)}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              formData.brand === brand
+                                ? "opacity-100"
+                                : "opacity-0"
+                            )}
+                          />
+                          {brand}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                    <CommandSeparator />
+                    <CommandGroup>
+                      {isAddingBrand ? (
+                        <div className="flex items-center p-2">
+                          <Input
+                            value={newBrand}
+                            onChange={(e) => setNewBrand(e.target.value)}
+                            className="flex-1 mr-2"
+                            placeholder="Enter new brand"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleAddBrand();
+                              }
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={handleAddBrand}
+                            disabled={!newBrand}
+                          >
+                            Add
+                          </Button>
+                        </div>
+                      ) : (
+                        <CommandItem
+                          onSelect={() => setIsAddingBrand(true)}
+                          className="text-primary"
+                        >
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          Add new brand
+                        </CommandItem>
+                      )}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            {formErrors.brand && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.brand}</p>
             )}
-          />
-          <FormField
-            control={form.control}
-            name="product_name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Product Name</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+          </div>
+          <div>
+            <Label htmlFor="product_name">Product Name</Label>
+            <Input 
+              id="product_name"
+              name="product_name"
+              value={formData.product_name}
+              onChange={handleInputChange}
+            />
+            {formErrors.product_name && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.product_name}</p>
             )}
-          />
+          </div>
+{/* Here will be the guide soon on what to do  */}
         </div>
 
         {/* Right Column: Product Variants */}
@@ -972,7 +988,7 @@ export function AddProductForm({ onSuccess }: AddProductFormProps) {
                           {/* Variant Image */}
                           <div className="mb-2 w-full h-32 flex items-center justify-center border rounded-md overflow-hidden bg-muted/30">
                             <img
-                              src={variant.image_url || ImagePlaceholder}
+                              src={variant.image_url || (variant.image ? URL.createObjectURL(variant.image) : ImagePlaceholder)}
                               alt={variant.variant_name}
                               className="max-h-28 max-w-full object-contain"
                             />
@@ -1024,7 +1040,7 @@ export function AddProductForm({ onSuccess }: AddProductFormProps) {
           </Button>
         </DialogFooter>
       </form>
-    </Form>
+    </div>
   );
 }
 
