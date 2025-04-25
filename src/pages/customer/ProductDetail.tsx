@@ -31,6 +31,7 @@ interface Product {
   store_price: number;
   image_url: string;
   description?: string;
+  variants: any;
 }
 
 function ProductDetail() {
@@ -44,6 +45,8 @@ function ProductDetail() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -60,6 +63,7 @@ function ProductDetail() {
         }
         const data = await response.json();
         setProduct(data);
+        setSelectedVariantIndex(0); // Reset to first variant on product change
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load product');
       } finally {
@@ -108,40 +112,64 @@ function ProductDetail() {
     return <div className="w-full text-center py-8 text-red-500">{error || 'Product not found'}</div>;
   }
 
+  // Use selected variant for display
+  const selectedVariant = product.variants?.[selectedVariantIndex] || product.variants?.[0];
+  const displayImage = imageError || !selectedVariant?.image_url ? sample : selectedVariant.image_url;
+  const displayPrice = selectedVariant?.store_price ?? product.store_price;
+  const displayStock = selectedVariant?.quantity ?? product.quantity;
+
   // Format price using Intl.NumberFormat for consistent formatting
   const formattedPrice = new Intl.NumberFormat('en-PH', {
     style: 'currency',
     currency: 'PHP',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(product.store_price);
+  }).format(displayPrice);
 
   const renderActionButton = () => {
-    if (!product || product.quantity === 0) return null;
+    if (!product || displayStock === 0) return null;
     if (currentUser && currentUser.role === "admin") {
       return <Button className="w-32">View</Button>;
     }
     // show add/remove to cart for all users (including guests)
     return (
       <div className="flex flex-col gap-2 items-start">
+        {/* Variant Selector above quantity control */}
+        {product.variants && product.variants.length > 1 && (
+          <div className="flex gap-2 mb-2">
+            {product.variants.map((variant: any, idx: number) => (
+              <Button
+                key={variant.sku || idx}
+                size="sm"
+                variant={selectedVariantIndex === idx ? 'default' : 'outline'}
+                onClick={() => {
+                  setSelectedVariantIndex(idx);
+                  setImageError(false);
+                }}
+              >
+                {variant.sku || `Variant ${idx + 1}`}
+              </Button>
+            ))}
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <label htmlFor="quantity" className="text-sm">Qty:</label>
           <input
             id="quantity"
             type="number"
             min={1}
-            max={product.quantity}
+            max={displayStock}
             value={quantity}
-            onChange={e => setQuantity(Math.max(1, Math.min(product.quantity, Number(e.target.value))))}
+            onChange={e => setQuantity(Math.max(1, Math.min(displayStock, Number(e.target.value))))}
             className="w-16 border rounded px-2 py-1 text-center"
           />
-          <span className="text-xs text-gray-500">/ {product.quantity} in stock</span>
+          <span className="text-xs text-gray-500">/ {displayStock} in stock</span>
         </div>
         <Button
           className="w-48"
           variant={isInCart ? "destructive" : "default"}
           onClick={handleAddToCart}
-          disabled={isLoading || product.quantity === 0}
+          disabled={isLoading || displayStock === 0}
         >
           {isInCart ? (
             <>
@@ -170,13 +198,10 @@ function ProductDetail() {
             onClick={() => setImagePreviewOpen(true)}
           >
             <img
-              src={product.image_url || sample}
+              src={displayImage}
               className="h-full w-full rounded-2xl object-cover absolute inset-0"
               alt={product.product_name}
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = sample;
-              }}
+              onError={() => setImageError(true)}
             />
           </div>
         </div>
@@ -186,8 +211,7 @@ function ProductDetail() {
             <p className="text-4xl font-bold truncate">{product.product_name}</p>
           </div>
           <h1 className="text-4xl font-bold">{formattedPrice}</h1>
-          <div className="text-lg text-gray-600">Stocks left: <span className="font-semibold">{product.quantity}</span></div>
-          
+          <div className="text-lg text-gray-600">Stocks left: <span className="font-semibold">{displayStock}</span></div>
           {/* Display product description if available */}
           {product.description && (
             <div className="mt-4 mb-2">
@@ -195,8 +219,8 @@ function ProductDetail() {
               <p className="whitespace-pre-line">{product.description}</p>
             </div>
           )}
-          
           <p className="text-xs text-gray-500 italic mb-2">Prices are subject to change without prior notice.</p>
+          {/* Place variant selector above quantity control in action button */}
           <div className="flex flex-row gap-4 items-center">
             {renderActionButton()}
           </div>
@@ -212,13 +236,10 @@ function ProductDetail() {
             onClick={() => setImagePreviewOpen(true)}
           >
             <img
-              src={product.image_url || sample}
+              src={displayImage}
               className="h-full w-full rounded-2xl object-cover absolute inset-0"
               alt={product.product_name}
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = sample;
-              }}
+              onError={() => setImageError(true)}
             />
           </div>
           <div className="flex flex-row gap-4 items-center p-4">
@@ -227,8 +248,7 @@ function ProductDetail() {
             </p>
           </div>
           <h1 className="text-4xl font-bold mb-2">{formattedPrice}</h1>
-          <div className="text-lg text-gray-600 mb-2">Stocks left: <span className="font-semibold">{product.quantity}</span></div>
-          
+          <div className="text-lg text-gray-600 mb-2">Stocks left: <span className="font-semibold">{displayStock}</span></div>
           {/* Display product description on mobile layout */}
           {product.description && (
             <div className="mb-4 px-2">
@@ -236,8 +256,8 @@ function ProductDetail() {
               <p className="whitespace-pre-line text-center">{product.description}</p>
             </div>
           )}
-          
           <p className="text-xs text-gray-500 italic mb-2">Prices are subject to change without prior notice.</p>
+          {/* Place variant selector above quantity control in action button (mobile) */}
           <div className="flex flex-row gap-4 justify-center">
             {renderActionButton()}
           </div>
@@ -256,13 +276,10 @@ function ProductDetail() {
               <X size={24} />
             </Button>
             <img
-              src={product.image_url || sample}
+              src={displayImage}
               className="w-full h-full object-contain p-2"
               alt={product.product_name}
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = sample;
-              }}
+              onError={() => setImageError(true)}
             />
           </div>
         </DialogContent>
