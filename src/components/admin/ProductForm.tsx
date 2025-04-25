@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 import type { Inventory } from "@/components/admin/InventoryColumns";
 import ImagePlaceholder from "@/assets/image-placeholder.webp";
 import { Minus, Plus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 type FormData = {
   product_id: string;
@@ -119,6 +120,7 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
   });
 
   // State for tracking product ID uniqueness
+  const [isAutoGenerateSku, setIsAutoGenerateSku] = React.useState(false);
   const [productIdState, setProductIdState] = React.useState<{
     isChecking: boolean;
     isDuplicate: boolean;
@@ -344,14 +346,14 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
   const watchProductName = form.watch("product_name");
 
   React.useEffect(() => {
-    // Only generate ID automatically in add mode and if product_id is empty
-    if (mode === "add" && !form.getValues("product_id")) {
+    // Only generate ID automatically in add mode, if auto-generate is enabled, and if we have enough information
+    if (mode === "add" && isAutoGenerateSku && (watchCategory || watchBrand || watchProductName)) {
       const generatedId = generateProductId();
       if (generatedId) {
         form.setValue("product_id", generatedId);
       }
     }
-  }, [watchCategory, watchBrand, watchProductName, mode]);
+  }, [watchCategory, watchBrand, watchProductName, mode, isAutoGenerateSku]);
 
   async function onSubmit(values: FormSchema) {
     try {
@@ -542,13 +544,31 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
             name="product_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Product ID</FormLabel>
+                <div className="flex items-center justify-between mb-2">
+                  <FormLabel>SKU</FormLabel>
+                  {mode === "add" && (
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="auto-sku"
+                        checked={isAutoGenerateSku}
+                        onCheckedChange={setIsAutoGenerateSku}
+                      />
+                      <label
+                        htmlFor="auto-sku"
+                        className="text-sm text-muted-foreground cursor-pointer"
+                      >
+                        Auto-generate
+                      </label>
+                    </div>
+                  )}
+                </div>
                 <FormControl>
                   <div className="relative">
                     <Input 
                       {...field} 
-                      disabled={mode === "edit"} 
+                      disabled={mode === "edit" || isAutoGenerateSku} 
                       className={productIdState.isDuplicate ? "border-red-500 pr-10" : ""}
+                      placeholder={isAutoGenerateSku ? "Will be auto-generated" : "Enter SKU manually"}
                     />
                     {productIdState.isChecking && (
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
