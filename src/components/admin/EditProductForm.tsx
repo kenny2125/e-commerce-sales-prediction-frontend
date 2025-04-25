@@ -128,8 +128,49 @@ export function EditProductForm({ initialData, onSuccess }: EditProductFormProps
   // Fetch existing variants when editing a product
   React.useEffect(() => {
     if (initialData?.id) {
-      // Initialize variants from initial data
-      setVariants(initialData.variants || []);
+      // Check if initialData has a 'variants' property that's populated
+      if (initialData.variants && Array.isArray(initialData.variants)) {
+        // Map the variants array to ensure the correct property structure
+        const formattedVariants = initialData.variants.map(variant => ({
+          id: variant.id,
+          sku: variant.sku || '',
+          variant_name: variant.variant_name || '',
+          description: variant.description || '',
+          store_price: variant.store_price || 0,
+          quantity: variant.quantity || 0,
+          image_url: variant.image_url || ''
+        }));
+        
+        setVariants(formattedVariants);
+      } else {
+        // If variants aren't in the expected structure, fetch them from the API
+        const fetchProductWithVariants = async () => {
+          try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/product/${initialData.id}`);
+            if (response.ok) {
+              const productData = await response.json();
+              if (productData.variants && Array.isArray(productData.variants)) {
+                // Map the fetched variants to ensure the correct property structure
+                const formattedVariants = productData.variants.map(variant => ({
+                  id: variant.id,
+                  sku: variant.sku || '',
+                  variant_name: variant.variant_name || '',
+                  description: variant.description || '',
+                  store_price: variant.store_price || 0,
+                  quantity: variant.quantity || 0,
+                  image_url: variant.image_url || ''
+                }));
+                
+                setVariants(formattedVariants);
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching product variants:", error);
+          }
+        };
+        
+        fetchProductWithVariants();
+      }
     }
   }, [initialData]);
   
