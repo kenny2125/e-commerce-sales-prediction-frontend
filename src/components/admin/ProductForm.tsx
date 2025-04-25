@@ -66,6 +66,7 @@ const formSchema = z.object({
   quantity: z.coerce.number().min(0),
   store_price: z.string().regex(/^[\d,]*\.?\d*$/, "Invalid price format"),
   image: z.instanceof(FileList).optional(),
+  description: z.string().optional(), // Keep description field
 });
 
 type FormSchema = z.infer<typeof formSchema>;
@@ -83,7 +84,7 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
     message: string;
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-
+  
   const formatPrice = (price: number | string): string => {
     if (typeof price === "string") {
       // Assuming the string is already formatted or needs formatting
@@ -380,6 +381,9 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
           if (key === "store_price" && typeof value === "string") {
             // Convert formatted price string back to number before sending
             formData.append(key, String(Number(value.replace(/,/g, ""))));
+          } else if (key === "description" && value) {
+            // Ensure description is sent as plain text
+            formData.append(key, String(value));
           } else {
             formData.append(key, String(value));
           }
@@ -439,7 +443,6 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
       setIsSubmitting(false);
     }
   }
-
   // Updated onChange handler: Only validates input, does not format
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -878,6 +881,25 @@ export function ProductForm({ initialData, onSuccess, mode }: ProductFormProps) 
                     onChange={handlePriceChange} // Use updated change handler
                     onBlur={handlePriceBlur} // Add the blur handler for formatting
                     value={field.value || ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          {/* Add Description field */}
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Product Description (Optional)</FormLabel>
+                <FormControl>
+                  <textarea
+                    className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    {...field}
+                    placeholder="Enter product description..."
                   />
                 </FormControl>
                 <FormMessage />

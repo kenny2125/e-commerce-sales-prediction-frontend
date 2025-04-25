@@ -30,6 +30,7 @@ interface Product {
   quantity: number;
   store_price: number;
   image_url: string;
+  description?: string;
 }
 
 function ProductDetail() {
@@ -186,6 +187,15 @@ function ProductDetail() {
           </div>
           <h1 className="text-4xl font-bold">{formattedPrice}</h1>
           <div className="text-lg text-gray-600">Stocks left: <span className="font-semibold">{product.quantity}</span></div>
+          
+          {/* Display product description if available */}
+          {product.description && (
+            <div className="mt-4 mb-2">
+              <h3 className="text-lg font-semibold mb-2">Description</h3>
+              <p className="whitespace-pre-line">{product.description}</p>
+            </div>
+          )}
+          
           <p className="text-xs text-gray-500 italic mb-2">Prices are subject to change without prior notice.</p>
           <div className="flex flex-row gap-4 items-center">
             {renderActionButton()}
@@ -218,6 +228,15 @@ function ProductDetail() {
           </div>
           <h1 className="text-4xl font-bold mb-2">{formattedPrice}</h1>
           <div className="text-lg text-gray-600 mb-2">Stocks left: <span className="font-semibold">{product.quantity}</span></div>
+          
+          {/* Display product description on mobile layout */}
+          {product.description && (
+            <div className="mb-4 px-2">
+              <h3 className="text-lg font-semibold mb-2">Description</h3>
+              <p className="whitespace-pre-line text-center">{product.description}</p>
+            </div>
+          )}
+          
           <p className="text-xs text-gray-500 italic mb-2">Prices are subject to change without prior notice.</p>
           <div className="flex flex-row gap-4 justify-center">
             {renderActionButton()}
