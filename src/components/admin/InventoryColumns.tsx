@@ -38,50 +38,6 @@ export type Inventory = {
 // Define the columns as a function that accepts refreshData
 export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
   {
-    accessorKey: "product_id",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Product ID
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
-      const product = row.original;
-      return (
-        <>
-          <div
-            className="capitalize pl-4 cursor-pointer hover:bg-muted/40"
-            onClick={() => setIsEditDialogOpen(true)}
-          >
-            {row.getValue("product_id")}
-          </div>
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="sm:max-w-[90vw] md:max-w-[95vw] lg:max-w-[90vw] xl:max-w-7xl max-h-[90vh] p-0 flex flex-col">
-              <DialogHeader>
-                <DialogTitle>Edit Product</DialogTitle>
-                <DialogDescription>
-                  Make changes to the product details below. Click update when
-                  you're done.
-                </DialogDescription>
-              </DialogHeader>
-              <ProductForm
-                initialData={product}
-                onSuccess={() => setIsEditDialogOpen(false)}
-                mode="edit"
-              />
-            </DialogContent>
-          </Dialog>
-        </>
-      );
-    },
-  },
-  {
     accessorKey: "category",
     header: ({ column }) => {
       return (
@@ -265,15 +221,14 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
     },
   },
   {
-    accessorKey: "quantity",
+    accessorKey: "variant_amounts",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="w-full justify-center"
         >
-          Quantity
+          Variant Amounts
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -287,7 +242,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
             className="text-center cursor-pointer hover:bg-muted/40"
             onClick={() => setIsEditDialogOpen(true)}
           >
-            {row.getValue("quantity")}
+            {row.getValue("variant_amounts")}
           </div>
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
             <DialogContent className="sm:max-w-[90vw] md:max-w-[95vw] lg:max-w-[90vw] xl:max-w-7xl max-h-[90vh] p-8 flex flex-col">
@@ -308,102 +263,6 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
         </>
       );
     },
-  },
-  {
-    accessorKey: "store_price",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="w-full justify-end"
-        >
-          Price
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
-      const product = row.original;
-      const amount = parseFloat(row.getValue("store_price"));
-      const formatted = new Intl.NumberFormat("en-PH", {
-        style: "currency",
-        currency: "PHP",
-      }).format(amount);
-      return (
-        <>
-          <div
-            className="text-right font-medium pr-4 cursor-pointer hover:bg-muted/40"
-            onClick={() => setIsEditDialogOpen(true)}
-          >
-            {formatted}
-          </div>
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Edit Product</DialogTitle>
-                <DialogDescription>
-                  Make changes to the product details below. Click update when
-                  you're done.
-                </DialogDescription>
-              </DialogHeader>
-              <ProductForm
-                initialData={product}
-                onSuccess={() => setIsEditDialogOpen(false)}
-                mode="edit"
-              />
-            </DialogContent>
-          </Dialog>
-        </>
-      );
-    },
-  },
-  {
-    accessorKey: "image_url",
-    header: () => <div className="text-center">Image</div>,
-    cell: ({ row }) => {
-      const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
-      const product = row.original;
-      const imageUrl = row.getValue("image_url") as string;
-      return (
-        <>
-          <div
-            className="cursor-pointer hover:bg-muted/40"
-            onClick={() => setIsEditDialogOpen(true)}
-          >
-            {imageUrl ? (
-              <img
-                src={imageUrl}
-                alt={row.getValue("product_name")}
-                className="w-16 h-16 object-cover rounded-md mx-auto"
-              />
-            ) : (
-              <div className="w-16 h-16 bg-gray-100 rounded-md flex items-center justify-center text-xs text-gray-500 mx-auto">
-                No image
-              </div>
-            )}
-          </div>
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Edit Product</DialogTitle>
-                <DialogDescription>
-                  Make changes to the product details below. Click update when
-                  you're done.
-                </DialogDescription>
-              </DialogHeader>
-              <ProductForm
-                initialData={product}
-                onSuccess={() => setIsEditDialogOpen(false)}
-                mode="edit"
-              />
-            </DialogContent>
-          </Dialog>
-        </>
-      );
-    },
-    enableSorting: false,
   },
   {
     id: "actions",
