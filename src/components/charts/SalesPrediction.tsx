@@ -468,173 +468,75 @@ export function SalesPrediction() {
         )}
 
         {isLoading ? (
-          <div className="flex justify-center items-center h-[300px] md:h-[400px]">Loading chart data...</div>
+          <div className="flex justify-center items-center h-[350px] md:h-[500px]">Loading chart data...</div>
         ) : error ? (
-          <div className="flex justify-center items-center h-[300px] md:h-[400px]">{error}</div>
+          <div className="flex justify-center items-center h-[350px] md:h-[500px]">{error}</div>
         ) : (
-          <Tabs defaultValue="stacked" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-2">
-              <TabsTrigger value="stacked">Stacked View</TabsTrigger>
-              <TabsTrigger value="separate">Separate View</TabsTrigger>
-            </TabsList>
-            <TabsContent value="stacked" className="h-[350px] md:h-[450px]">
-              <ChartContainer config={chartConfig}>
-                <AreaChart
-                  accessibilityLayer
-                  data={chartData}
-                  margin={{
-                    top: 10,
-                    right: isMobile ? 10 : 30,
-                    left: isMobile ? 5 : 10,
-                    bottom: isMobile ? 60 : 30,
-                  }}
-                  stackOffset="none"
-                >
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    tickLine={true}
-                    axisLine={true}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                    interval={2}
-                    tick={{ fontSize: isMobile ? 10 : 12 }}
-                  />
-                  <YAxis 
-                    tickLine={false}
-                    axisLine={true}
-                    tickFormatter={(value) => `$${value.toLocaleString()}`}
-                    width={isMobile ? 50 : 60}
-                    tick={{ fontSize: isMobile ? 10 : 12 }}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={
-                      <ChartTooltipContent 
-                        formatter={(value: any) => 
-                          value ? `$${Number(value).toLocaleString()}` : 'N/A'
-                        }
-                      />
-                    }
-                  />
-                  <Area
-                    dataKey="total_sales"
-                    type="monotone"
-                    name="total_sales"
-                    fill="var(--color-total_sales)"
-                    fillOpacity={0.6}
-                    stroke="var(--color-total_sales)"
-                    strokeWidth={2}
-                    connectNulls
-                  />
-                  <Area
-                    dataKey="predicted_sales"
-                    type="monotone"
-                    name="predicted_sales"
-                    fill="var(--color-predicted_sales)"
-                    fillOpacity={0.5}
-                    stroke="var(--color-predicted_sales)"
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    connectNulls
-                  />
-                </AreaChart>
-              </ChartContainer>
-            </TabsContent>
-            <TabsContent value="separate" className="h-[350px] md:h-[450px]">
-              <ChartContainer config={chartConfig}>
-                <AreaChart
-                  accessibilityLayer
-                  data={chartData}
-                  margin={{
-                    top: 10,
-                    right: isMobile ? 10 : 30,
-                    left: isMobile ? 5 : 10,
-                    bottom: isMobile ? 60 : 30,
-                  }}
-                >
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    tickLine={true}
-                    axisLine={true}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                    interval={isMobile ? 2 : 0}
-                    tick={{ fontSize: isMobile ? 10 : 12 }}
-                  />
-                  <YAxis 
-                    tickLine={false}
-                    axisLine={true}
-                    tickFormatter={(value) => `$${value.toLocaleString()}`}
-                    width={isMobile ? 50 : 60}
-                    tick={{ fontSize: isMobile ? 10 : 12 }}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={
-                      <ChartTooltipContent 
-                        formatter={(value: any) => 
-                          value ? `$${Number(value).toLocaleString()}` : 'N/A'
-                        }
-                      />
-                    }
-                  />
-                  
-                  {/* On mobile, prioritize showing predicted sales */}
-                  {isMobile ? (
-                    <>
-                      <Area
-                        dataKey="predicted_sales"
-                        type="monotone"
-                        name="predicted_sales"
-                        fill="var(--color-predicted_sales)"
-                        fillOpacity={0.6}
-                        stroke="var(--color-predicted_sales)"
-                        connectNulls
-                      />
-                      {predictionData.length > 0 && (
-                        <Area
-                          dataKey="total_sales"
-                          type="monotone"
-                          name="total_sales"
-                          fill="var(--color-total_sales)"
-                          fillOpacity={0.6}
-                          stroke="var(--color-total_sales)"
-                          connectNulls
-                        />
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <Area
-                        dataKey="total_sales"
-                        type="monotone"
-                        name="total_sales"
-                        fill="var(--color-total_sales)"
-                        fillOpacity={0.6}
-                        stroke="var(--color-total_sales)"
-                        connectNulls
-                      />
-                      {predictionData.length > 0 && (
-                        <Area
-                          dataKey="predicted_sales"
-                          type="monotone"
-                          name="predicted_sales"
-                          fill="var(--color-predicted_sales)"
-                          fillOpacity={0.6}
-                          stroke="var(--color-predicted_sales)"
-                          connectNulls
-                        />
-                      )}
-                    </>
-                  )}
-                </AreaChart>
-              </ChartContainer>
-            </TabsContent>
-          </Tabs>
+          <div className="h-[300px] md:h-[550px]">
+            <ChartContainer config={chartConfig}>
+              <AreaChart
+                accessibilityLayer
+                data={chartData}
+                margin={{
+                  top: 10,
+                  right: isMobile ? 10 : 30,
+                  left: isMobile ? 5 : 10,
+                  bottom: isMobile ? 60 : 30,
+                }}
+                stackOffset="none"
+              >
+                <CartesianGrid vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tickLine={true}
+                  axisLine={true}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                  interval={2}
+                  tick={{ fontSize: isMobile ? 10 : 12 }}
+                />
+                <YAxis 
+                  tickLine={false}
+                  axisLine={true}
+                  tickFormatter={(value) => `₱${value.toLocaleString()}`}
+                  width={isMobile ? 50 : 60}
+                  tick={{ fontSize: isMobile ? 10 : 12 }}
+                />
+                <ChartTooltip
+                  cursor={false}
+                  content={
+                    <ChartTooltipContent 
+                      formatter={(value: any) => 
+                        value ? `₱${Number(value).toLocaleString()}` : 'N/A'
+                      }
+                    />
+                  }
+                />
+                <Area
+                  dataKey="total_sales"
+                  type="monotone"
+                  name="total_sales"
+                  fill="var(--color-total_sales)"
+                  fillOpacity={0.6}
+                  stroke="var(--color-total_sales)"
+                  strokeWidth={2}
+                  connectNulls
+                />
+                <Area
+                  dataKey="predicted_sales"
+                  type="monotone"
+                  name="predicted_sales"
+                  fill="var(--color-predicted_sales)"
+                  fillOpacity={0.5}
+                  stroke="var(--color-predicted_sales)"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  connectNulls
+                />
+              </AreaChart>
+            </ChartContainer>
+          </div>
         )}
         
         {/* Prediction Results Tables */}
@@ -662,8 +564,8 @@ export function SalesPrediction() {
                       {validationMetrics?.details?.map((item, index) => (
                         <tr key={index} className="border-b last:border-0">
                           <td className="py-2">{item.month_name} {item.year}</td>
-                          <td className="text-right py-2">${item.actual_sales.toLocaleString()}</td>
-                          <td className="text-right py-2">${item.predicted_sales.toLocaleString()}</td>
+                          <td className="text-right py-2">₱{item.actual_sales.toLocaleString()}</td>
+                          <td className="text-right py-2">₱{item.predicted_sales.toLocaleString()}</td>
                           <td className="text-right py-2 font-medium" 
                               style={{ color: Math.abs(item.difference) < item.actual_sales * 0.1 ? 'inherit' : (item.difference > 0 ? 'red' : 'green') }}>
                             {item.difference > 0 ? '+' : ''}{item.difference.toLocaleString()}
@@ -699,7 +601,7 @@ export function SalesPrediction() {
                         <td className="text-right py-2">
                           {pred.normalized_prediction?.toFixed(6) || 'N/A'}
                         </td>
-                        <td className="text-right py-2">${pred.predicted_sales.toLocaleString()}</td>
+                        <td className="text-right py-2">₱{pred.predicted_sales.toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -716,22 +618,22 @@ export function SalesPrediction() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <p className="text-sm font-medium">Minimum Sales</p>
-                <p className="text-lg">${normalizationParams.min_sales.toLocaleString()}</p>
+                <p className="text-lg">₱{normalizationParams.min_sales.toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-sm font-medium">Maximum Sales</p>
-                <p className="text-lg">${normalizationParams.max_sales.toLocaleString()}</p>
+                <p className="text-lg">₱{normalizationParams.max_sales.toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-sm font-medium">Range</p>
-                <p className="text-lg">${normalizationParams.range.toLocaleString()}</p>
+                <p className="text-lg">₱{normalizationParams.range.toLocaleString()}</p>
               </div>
             </div>
           </div>
         )}
       </CardContent>
       <CardFooter>
-        <div className="flex w-full flex-col sm:flex-row items-start gap-2 text-sm">
+        <div className="flex w-full flex-col sm:flex-row items-start gap-2 text-sm pt-8">
           <div className="grid gap-2">
             <div className="flex items-center gap-2 font-medium leading-none">
               {trend.isUp ? (

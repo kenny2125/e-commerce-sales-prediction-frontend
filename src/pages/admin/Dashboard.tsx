@@ -7,7 +7,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { LineChartInteractive } from "@/components/charts/LineChartInterative";
+import { FlaskPredictionChart } from "@/components/charts/FlaskPredictionChart";
 import {
   PhilippinePeso,
   Package,
@@ -15,7 +17,10 @@ import {
   ShoppingCart,
   BarChart3,
   CpuIcon,
+  Brain,
+  Loader2,
 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface RecentSale {
   id: string;
@@ -29,6 +34,13 @@ interface StockLevel {
   quantity: number;
   status: string;
 }
+
+// interface FlaskPrediction {
+//   year: number;
+//   month: number;
+//   month_name: string;
+//   predicted_sales: number;
+// }
 
 export default function Dashboard() {
   const [ongoingOrders, setOngoingOrders] = useState(0);
@@ -44,6 +56,9 @@ export default function Dashboard() {
       total_quantity: number;
     }>
   >([]);
+  // const [flaskPredictions, setFlaskPredictions] = useState<FlaskPrediction[]>([]);
+  // const [isFlaskLoading, setIsFlaskLoading] = useState(false);
+  // const [flaskError, setFlaskError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTotalRevenue = async () => {
@@ -119,6 +134,55 @@ export default function Dashboard() {
       currency: "PHP",
     }).format(amount);
   };
+
+  // const fetchFlaskPrediction = async () => {
+  //   setIsFlaskLoading(true);
+  //   setFlaskError(null);
+    
+  //   try {
+  //     const response = await fetch(
+  //       `${import.meta.env.VITE_API_URL}/api/predictions/flask-prediction?months_ahead=6`
+  //     );
+      
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(errorData.message || 'Failed to fetch predictions from Flask server');
+  //     }
+      
+  //     const data = await response.json();
+  //     setFlaskPredictions(data.predictions);
+  //   } catch (error) {
+  //     console.error("Error fetching Flask predictions:", error);
+  //     setFlaskError(error instanceof Error ? error.message : 'Unknown error occurred');
+  //   } finally {
+  //     setIsFlaskLoading(false);
+  //   }
+  // };
+
+  // const trainFlaskModel = async () => {
+  //   setIsFlaskLoading(true);
+  //   setFlaskError(null);
+    
+  //   try {
+  //     const response = await fetch(
+  //       `${import.meta.env.VITE_API_URL}/api/predictions/train-flask-model`,
+  //       { method: 'POST' }
+  //     );
+      
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(errorData.message || 'Failed to train model on Flask server');
+  //     }
+      
+  //     // After training, fetch updated predictions
+  //     await fetchFlaskPrediction();
+  //   } catch (error) {
+  //     console.error("Error training Flask model:", error);
+  //     setFlaskError(error instanceof Error ? error.message : 'Unknown error occurred');
+  //   } finally {
+  //     setIsFlaskLoading(false);
+  //   }
+  // };
 
   return (
     <div className="w-full">
@@ -247,6 +311,11 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Flask Predictions Section */}
+      {/* <div className="mt-6">
+        <FlaskPredictionChart />
+      </div> */}
     </div>
   );
 }
