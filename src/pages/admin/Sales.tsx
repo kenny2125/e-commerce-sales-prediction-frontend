@@ -15,6 +15,7 @@ import { CustomerAcquisition } from "@/components/charts/CustomerAcquisition";
 import { SalesPrediction } from "@/components/charts/SalesPrediction";
 import { SalesRecordsTable } from "@/components/admin/SalesRecordsTable";
 import { HistoricalSalesTable } from "@/components/admin/HistoricalSalesTable";
+import { Switch } from "@/components/ui/switch";
 
 // Interface for KPI data structure
 interface KpiData {
@@ -25,10 +26,10 @@ interface KpiData {
 }
 
 // Placeholder KPI Card Component (can be moved to a separate file later)
-const KpiCard = ({ title, value, icon: Icon, description }: { title: string; value: string; icon: React.ElementType; description?: string }) => (
+const KpiCard = ({ title, value, icon: Icon, description, children }: { title: string; value: string; icon: React.ElementType; description?: string; children?: React.ReactNode }) => (
   <Card>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <CardTitle className="text-sm font-medium flex items-center gap-2">{title} {children}</CardTitle>
       <Icon className="h-4 w-4 text-muted-foreground" />
     </CardHeader>
     <CardContent>
@@ -42,6 +43,7 @@ export default function Sales() {
   const [kpiData, setKpiData] = useState<KpiData | null>(null);
   const [kpiLoading, setKpiLoading] = useState(true);
   const [kpiError, setKpiError] = useState<string | null>(null);
+  const [revenueSource, setRevenueSource] = useState<'sales' | 'historical'>('sales');
 
   // Fetch KPI data
   useEffect(() => {
@@ -69,6 +71,26 @@ export default function Sales() {
 
     fetchKpiData();
   }, []);
+
+  // Fetch total revenue for the selected source
+  const [totalRevenue, setTotalRevenue] = useState<number>(0);
+  const [revenueLoading, setRevenueLoading] = useState(false);
+  useEffect(() => {
+    const fetchRevenue = async () => {
+      setRevenueLoading(true);
+      try {
+        const url = `${import.meta.env.VITE_API_URL}/api/sales/total-revenue?source=${revenueSource}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        setTotalRevenue(data.total_revenue);
+      } catch (e) {
+        setTotalRevenue(0);
+      } finally {
+        setRevenueLoading(false);
+      }
+    };
+    fetchRevenue();
+  }, [revenueSource]);
 
   // Helper function to format currency
   const formatCurrency = (value: number) => {
@@ -104,25 +126,36 @@ export default function Sales() {
             <Card><CardContent className="pt-6 text-destructive">Error loading KPIs: {kpiError}</CardContent></Card>
           ) : kpiData ? (
             <div className="grid gap-4 md:grid-cols-2">
-              <KpiCard 
-                title="Total Revenue" 
-                value={formatCurrency(kpiData.totalRevenue)}
-                icon={PhilippinePeso} 
-              />
-              <KpiCard 
-                title="Total Orders" 
+              <KpiCard
+                title={`Total Revenue (${revenueSource === 'historical' ? 'Historical Sales' : 'Sales Table'})`}
+                value={revenueLoading ? '...' : formatCurrency(totalRevenue)}
+                icon={PhilippinePeso}
+              >
+                <div className="flex items-center gap-2 ml-2">
+                  <span className="text-xs">Historical</span>
+                  <Switch
+                    checked={revenueSource === 'sales'}
+                    onCheckedChange={checked => setRevenueSource(checked ? 'sales' : 'historical')}
+                    className="mx-1"
+                    aria-label="Toggle revenue source"
+                  />
+                  <span className="text-xs">Sales</span>
+                </div>
+              </KpiCard>
+              <KpiCard
+                title="Total Orders"
                 value={kpiData.totalOrders.toString()}
-                icon={ShoppingCart} 
+                icon={ShoppingCart}
               />
-              <KpiCard 
-                title="Avg. Order Value" 
+              <KpiCard
+                title="Avg. Order Value"
                 value={formatCurrency(kpiData.averageOrderValue)}
-                icon={TrendingUp} 
+                icon={TrendingUp}
               />
-              <KpiCard 
-                title="New Customers (30d)" 
+              <KpiCard
+                title="New Customers (30d)"
                 value={kpiData.newCustomers.toString()}
-                icon={Users} 
+                icon={Users}
               />
             </div>
           ) : (

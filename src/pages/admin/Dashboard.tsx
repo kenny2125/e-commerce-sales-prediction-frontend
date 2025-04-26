@@ -64,7 +64,7 @@ export default function Dashboard() {
     const fetchTotalRevenue = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/sales/total-revenue`
+          `${import.meta.env.VITE_API_URL}/api/sales/total-revenue?source=historical`
         );
         const data = await response.json();
         setTotalRevenue(data.total_revenue);

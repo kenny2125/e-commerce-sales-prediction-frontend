@@ -432,7 +432,7 @@ export function Orders() {
           <p className="text-2xl font-bold">{statsLoading ? '...' : stats?.paidOrders ?? '0'}</p>
         </div>
         <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
-          <p className="text-sm text-muted-foreground">Total Revenue</p>
+          <p className="text-sm text-muted-foreground">Amount Sold Today</p>
           <p className="text-2xl font-bold">{statsLoading ? '...' : formatCurrency(stats?.totalRevenue)}</p>
         </div>
       </div>

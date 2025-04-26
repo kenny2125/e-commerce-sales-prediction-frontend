@@ -92,7 +92,7 @@ export function Inventory() {
         let status = "In Stock";
         if (totalQuantity === 0) {
           status = "Out of Stock";
-        } else if (totalQuantity <= 10) {
+        } else if (totalQuantity <= 5) {
           status = "Low Stock";
         }
         

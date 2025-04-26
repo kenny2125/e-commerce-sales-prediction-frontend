@@ -435,6 +435,7 @@ export function SalesPrediction() {
                   className="px-2 py-1 border rounded w-full md:w-16 h-9"
                 />
               </label>
+              {/* Max Points input hidden
               <label className="flex flex-col md:flex-row md:items-center gap-1 text-sm">
                 <span>Max Points:</span>
                 <input
@@ -446,7 +447,9 @@ export function SalesPrediction() {
                   className="px-2 py-1 border rounded w-full md:w-16 h-9"
                 />
               </label>
+              */}
             </div>
+            {/* Force Retraining switch hidden
             <div className="flex items-center space-x-2 mr-2">
               <Switch 
                 id="force-training" 
@@ -455,13 +458,14 @@ export function SalesPrediction() {
               />
               <Label htmlFor="force-training" className="text-sm">Force Retraining</Label>
             </div>
+            */}
             <Button 
               onClick={predictFutureSales} 
               disabled={isLoading || isPredicting}
               variant="outline"
               className="w-full md:w-auto h-9"
             >
-              {isPredicting ? "Predicting..." : "Predict Future Sales"}
+              {isPredicting ? "Predicting..." : "Show Predicted Sales"}
             </Button>
           </div>
         </div>
@@ -592,7 +596,7 @@ export function SalesPrediction() {
           <>
             {/* Overlapping Months Comparison */}
             {getOverlappingMonths().length > 0 && (
-              <div className="mt-4 border rounded-md p-4">
+              <div className="mt-12 border rounded-md p-4">
                 <h3 className="font-medium mb-2">Actual vs. Predicted Sales Comparison</h3>
                 <p className="text-sm text-muted-foreground mb-3">
                   Comparing actual sales with model predictions for overlapping periods
@@ -631,7 +635,7 @@ export function SalesPrediction() {
             )}
 
             {/* Future Predictions */}
-            <div className="mt-4 border rounded-md p-4">
+            {/* <div className="mt-4 border rounded-md p-4">
               <h3 className="font-medium mb-2">Future Sales Predictions</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -655,12 +659,12 @@ export function SalesPrediction() {
                   </tbody>
                 </table>
               </div>
-            </div>
+            </div> */}
           </>
         )}
         
         {/* Normalization Parameters (if available) */}
-        {normalizationParams && (
+        {/* {normalizationParams && (
           <div className="mt-4 border rounded-md p-4">
             <h3 className="font-medium mb-2">Normalization Parameters</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -678,7 +682,7 @@ export function SalesPrediction() {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Model Information */}
         {modelInfo && (
@@ -715,8 +719,8 @@ export function SalesPrediction() {
               </div>
               
               <div>
-                <p className="text-sm font-medium">Training Data Points</p>
-                <p className="text-base">{modelInfo.dataPoints || modelInfo.training_data_points || '-'}</p>
+                {/* <p className="text-sm font-medium">Training Data Points</p>
+                <p className="text-base">{modelInfo.dataPoints || modelInfo.training_data_points || '-'}</p> */}
                 
                 {modelInfo.lastSalesDate && (
                   <>
@@ -728,10 +732,10 @@ export function SalesPrediction() {
                   </>
                 )}
                 
-                <p className="text-sm font-medium mt-2">Final Error</p>
+                {/* <p className="text-sm font-medium mt-2">Final Error</p>
                 <p className="text-base">
                   {modelInfo.trainingParams?.finalError || modelInfo.final_error || '-'}
-                </p>
+                </p> */}
               </div>
             </div>
           </div>

@@ -253,17 +253,17 @@ export function LineChartInteractive() {
           <div className="flex flex-wrap gap-4 pt-4 sm:pt-0">
             {/* Average Daily Sales */}
             <div className="flex flex-col items-center bg-muted/30 p-3 rounded-md">
-              <span className="text-xs text-muted-foreground">Avg Daily Sales</span>
+              <span className="text-xs text-muted-foreground">Avg Monthly Sales</span>
               <span className="text-lg font-bold">{averageDailySales.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
             </div>
             {/* Median Daily Sales */}
             <div className="flex flex-col items-center bg-muted/30 p-3 rounded-md">
-              <span className="text-xs text-muted-foreground">Median Daily Sales</span>
+              <span className="text-xs text-muted-foreground">Median Monthly Sales</span>
               <span className="text-lg font-bold">{medianDailySales.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
             </div>
             {/* Peak Sales */}
             <div className="flex flex-col items-center bg-muted/30 p-3 rounded-md">
-              <span className="text-xs text-muted-foreground">Peak Sales</span>
+              <span className="text-xs text-muted-foreground">Peak Monthly Sales</span>
               <span className="text-lg font-bold">{peakSales.value.toLocaleString()}</span>
               {peakSales.date && <span className="text-xs text-muted-foreground">on {peakSales.date}</span>}
             </div>
