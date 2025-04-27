@@ -226,6 +226,14 @@ export default function Header() {
     }
   }
 
+  // Handle key press event for search inputs
+  const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      productSearch();
+    }
+  };
+
   const navigationLinks = getNavigationLinks();
 
   // Check if user role should have the admin header style
@@ -342,7 +350,11 @@ export default function Header() {
             </div>
             <div className="flex flex-1 justify-center">
               <div className="flex w-[520px] h-[53px] items-center gap-2">
-                <Input type="email" placeholder="Search" />
+                <Input 
+                  type="email" 
+                  placeholder="Search" 
+                  onKeyDown={handleSearchKeyPress}
+                />
                 <Button type="submit" onClick={productSearch}>
                   <Search /> <span>Search</span>
                 </Button>
@@ -402,7 +414,13 @@ export default function Header() {
           {/* Mobile filter/hamburger beside search bar (visible on small screens) */}
           {mobileSearchOpen && (
             <div className="flex md:hidden items-center px-4 pb-2 gap-2">
-              <Input id="mobile-search-input" type="email" placeholder="Search" className="flex-1" />
+              <Input 
+                id="mobile-search-input" 
+                type="email" 
+                placeholder="Search" 
+                className="flex-1" 
+                onKeyDown={handleSearchKeyPress}
+              />
               <Button type="submit" onClick={productSearch}>
                 <Search />
               </Button>
