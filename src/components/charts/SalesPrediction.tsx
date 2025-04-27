@@ -26,6 +26,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface MonthlyData {
   year: number
@@ -520,7 +521,45 @@ export function SalesPrediction() {
         )}
 
         {isLoading ? (
-          <div className="flex justify-center items-center h-[350px] md:h-[500px]">Loading chart data...</div>
+          <div className="h-[350px] md:h-[500px]">
+            {/* Skeleton loader for chart */}
+            <div className="flex flex-col h-full">
+              {/* Y-axis labels skeletons */}
+              <div className="flex items-center h-full">
+                <div className="flex flex-col justify-between h-full py-6">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Skeleton key={i} className="h-4 w-12 my-1" />
+                  ))}
+                </div>
+                
+                {/* Chart area skeleton */}
+                <div className="flex-1 h-full p-4">
+                  {/* Chart grid lines */}
+                  <div className="grid grid-cols-1 gap-8 h-full">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Skeleton key={i} className="h-0.5 w-full" />
+                    ))}
+                  </div>
+                  
+                  {/* Chart bars overlaid */}
+                  <div className="grid grid-cols-12 gap-2 h-[200px] mt-[-220px]">
+                    {Array.from({ length: 12 }).map((_, i) => (
+                      <div key={i} className="flex flex-col justify-end h-full">
+                        <Skeleton className={`w-full h-[${Math.floor(Math.random() * 150) + 50}px]`} style={{ height: `${Math.floor(Math.random() * 150) + 50}px` }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              {/* X-axis labels skeletons */}
+              <div className="flex justify-between mt-4 px-16">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <Skeleton key={i} className="h-4 w-16" />
+                ))}
+              </div>
+            </div>
+          </div>
         ) : error ? (
           <div className="flex justify-center items-center h-[350px] md:h-[500px]">{error}</div>
         ) : (

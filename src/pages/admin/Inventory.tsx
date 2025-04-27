@@ -38,6 +38,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import type { Inventory } from "@/components/admin/InventoryColumns";
 import { getColumns } from "@/components/admin/InventoryColumns";
@@ -290,30 +291,44 @@ export function Inventory() {
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
-          <p className="text-sm text-muted-foreground">Total Products</p>
-          <p className="text-2xl font-bold">
-            {isStatsLoading ? "..." : stats?.totalProducts ?? "N/A"}
-          </p>
-        </div>
-        <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
-          <p className="text-sm text-muted-foreground">Low Stock Items</p>
-          <p className="text-2xl font-bold">
-            {isStatsLoading ? "..." : stats?.lowStockItems ?? "N/A"}
-          </p>
-        </div>
-        <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
-          <p className="text-sm text-muted-foreground">Out of Stock Items</p>
-          <p className="text-2xl font-bold">
-            {isStatsLoading ? "..." : stats?.outOfStockItems ?? "N/A"}
-          </p>
-        </div>
-        <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
-          <p className="text-sm text-muted-foreground">Inventory Value</p>
-          <p className="text-2xl font-bold">
-            {isStatsLoading ? "..." : formatCurrency(stats?.totalInventoryValue)}
-          </p>
-        </div>
+        {isStatsLoading ? (
+          // Skeleton loaders for stats cards
+          <>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
+                <Skeleton className="h-4 w-32 mb-4" />
+                <Skeleton className="h-8 w-16" />
+              </div>
+            ))}
+          </>
+        ) : (
+          <>
+            <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
+              <p className="text-sm text-muted-foreground">Total Products</p>
+              <p className="text-2xl font-bold">
+                {stats?.totalProducts ?? "N/A"}
+              </p>
+            </div>
+            <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
+              <p className="text-sm text-muted-foreground">Low Stock Items</p>
+              <p className="text-2xl font-bold">
+                {stats?.lowStockItems ?? "N/A"}
+              </p>
+            </div>
+            <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
+              <p className="text-sm text-muted-foreground">Out of Stock Items</p>
+              <p className="text-2xl font-bold">
+                {stats?.outOfStockItems ?? "N/A"}
+              </p>
+            </div>
+            <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
+              <p className="text-sm text-muted-foreground">Inventory Value</p>
+              <p className="text-2xl font-bold">
+                {formatCurrency(stats?.totalInventoryValue)}
+              </p>
+            </div>
+          </>
+        )}
       </div>
       <div className="rounded-md border overflow-x-auto">
         <Table>
@@ -337,14 +352,16 @@ export function Inventory() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  Loading inventory...
-                </TableCell>
-              </TableRow>
+              // Skeleton loaders for table rows
+              Array(5).fill(0).map((_, index) => (
+                <TableRow key={`skeleton-row-${index}`}>
+                  {Array(8).fill(0).map((_, cellIndex) => (
+                    <TableCell key={`skeleton-cell-${index}-${cellIndex}`}>
+                      <Skeleton className={`h-5 ${cellIndex === 0 ? "w-8" : cellIndex === 1 ? "w-52" : "w-16"}`} />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow

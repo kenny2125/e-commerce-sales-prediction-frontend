@@ -41,6 +41,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { OrderDetailDialog, OrderDetail } from "@/components/dialogs/OrderDetailDialog";
 import { AddOrderDialog } from "@/components/dialogs/AddOrderDialog";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton"
 
 export type Orders = {
   orderID: string
@@ -355,8 +356,69 @@ export function Orders() {
 
   if (loading) {
     return (
-      <div className="flex h-[200px] w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="w-full space-y-6">
+        {/* Page header skeleton */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div>
+              <Skeleton className="h-8 w-36 mb-2" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-[300px]" />
+          </div>
+        </div>
+
+        {/* Stats cards skeleton */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
+              <Skeleton className="h-4 w-32 mb-4" />
+              <Skeleton className="h-8 w-16" />
+            </div>
+          ))}
+        </div>
+
+        {/* Table skeleton */}
+        <div className="rounded-md border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                  <TableHead key={`skeleton-header-${i}`}>
+                    <Skeleton className="h-5 w-24" />
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array(5).fill(0).map((_, index) => (
+                <TableRow key={`skeleton-row-${index}`}>
+                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        
+        {/* Pagination skeleton */}
+        <div className="flex flex-col sm:flex-row items-center justify-end gap-4 py-4">
+          <Skeleton className="h-5 w-48" />
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-20" />
+            <Skeleton className="h-9 w-20" />
+          </div>
+        </div>
       </div>
     )
   }
@@ -419,22 +481,36 @@ export function Orders() {
         </div>
       )}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
-          <p className="text-sm text-muted-foreground">Total Orders</p>
-          <p className="text-2xl font-bold">{statsLoading ? '...' : stats?.totalOrders ?? '0'}</p>
-        </div>
-        <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
-          <p className="text-sm text-muted-foreground">Processing Orders</p>
-          <p className="text-2xl font-bold">{statsLoading ? '...' : stats?.processingOrders ?? '0'}</p>
-        </div>
-        <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
-          <p className="text-sm text-muted-foreground">Paid Orders</p>
-          <p className="text-2xl font-bold">{statsLoading ? '...' : stats?.paidOrders ?? '0'}</p>
-        </div>
-        <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
-          <p className="text-sm text-muted-foreground">Amount Sold Today</p>
-          <p className="text-2xl font-bold">{statsLoading ? '...' : formatCurrency(stats?.totalRevenue)}</p>
-        </div>
+        {statsLoading ? (
+          // Skeleton loaders for stats cards
+          <>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
+                <Skeleton className="h-4 w-32 mb-4" />
+                <Skeleton className="h-8 w-16" />
+              </div>
+            ))}
+          </>
+        ) : (
+          <>
+            <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
+              <p className="text-sm text-muted-foreground">Total Orders</p>
+              <p className="text-2xl font-bold">{stats?.totalOrders ?? '0'}</p>
+            </div>
+            <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
+              <p className="text-sm text-muted-foreground">Processing Orders</p>
+              <p className="text-2xl font-bold">{stats?.processingOrders ?? '0'}</p>
+            </div>
+            <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
+              <p className="text-sm text-muted-foreground">Paid Orders</p>
+              <p className="text-2xl font-bold">{stats?.paidOrders ?? '0'}</p>
+            </div>
+            <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
+              <p className="text-sm text-muted-foreground">Amount Sold Today</p>
+              <p className="text-2xl font-bold">{formatCurrency(stats?.totalRevenue)}</p>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="rounded-md border overflow-x-auto">

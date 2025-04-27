@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LineChartInteractive } from "@/components/charts/LineChartInterative";
-import { FlaskPredictionChart } from "@/components/charts/FlaskPredictionChart";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   PhilippinePeso,
   Package,
@@ -21,6 +21,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface RecentSale {
   id: string;
@@ -32,15 +33,8 @@ interface StockLevel {
   product_id: string;
   product_name: string;
   quantity: number;
-  status: string;
+  status?: string; 
 }
-
-// interface FlaskPrediction {
-//   year: number;
-//   month: number;
-//   month_name: string;
-//   predicted_sales: number;
-// }
 
 export default function Dashboard() {
   const [ongoingOrders, setOngoingOrders] = useState(0);
@@ -50,18 +44,25 @@ export default function Dashboard() {
   const [frequentItems, setFrequentItems] = useState<
     Array<{
       product_id: string;
+      variant_id?: string;
       product_name: string;
       image_url: string;
       sold_count: number;
       total_quantity: number;
+      variant_name?: string;
     }>
   >([]);
-  // const [flaskPredictions, setFlaskPredictions] = useState<FlaskPrediction[]>([]);
-  // const [isFlaskLoading, setIsFlaskLoading] = useState(false);
-  // const [flaskError, setFlaskError] = useState<string | null>(null);
+  
+  // Loading states
+  const [loadingRevenue, setLoadingRevenue] = useState(true);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [loadingSales, setLoadingSales] = useState(true);
+  const [loadingStock, setLoadingStock] = useState(true);
+  const [loadingFrequent, setLoadingFrequent] = useState(true);
 
   useEffect(() => {
     const fetchTotalRevenue = async () => {
+      setLoadingRevenue(true);
       try {
         const response = await fetch(
           `${import.meta.env.VITE_API_URL}/api/sales/total-revenue?source=historical`
@@ -70,10 +71,13 @@ export default function Dashboard() {
         setTotalRevenue(data.total_revenue);
       } catch (error) {
         console.error("Error fetching total revenue:", error);
+      } finally {
+        setLoadingRevenue(false);
       }
     };
 
     const fetchOngoingOrders = async () => {
+      setLoadingOrders(true);
       try {
         const response = await fetch(
           `${import.meta.env.VITE_API_URL}/api/orders/ongoing-count`
@@ -82,10 +86,13 @@ export default function Dashboard() {
         setOngoingOrders(data.count);
       } catch (error) {
         console.error("Error fetching ongoing orders:", error);
+      } finally {
+        setLoadingOrders(false);
       }
     };
 
     const fetchRecentSales = async () => {
+      setLoadingSales(true);
       try {
         const response = await fetch(
           `${import.meta.env.VITE_API_URL}/api/sales/recent`
@@ -94,22 +101,37 @@ export default function Dashboard() {
         setRecentSales(data);
       } catch (error) {
         console.error("Error fetching recent sales:", error);
+      } finally {
+        setLoadingSales(false);
       }
     };
 
     const fetchStockLevels = async () => {
+      setLoadingStock(true);
       try {
         const response = await fetch(
           `${import.meta.env.VITE_API_URL}/api/product/stock-levels`
         );
         const data = await response.json();
-        setStockLevels(data);
+        
+        // Calculate status based on quantity
+        const stockWithStatus = data.map((item: StockLevel) => ({
+          ...item,
+          // Calculate status based on quantity thresholds
+          status: item.quantity <= 5 ? 'Low' : 
+                 item.quantity <= 20 ? 'Medium' : 'Good'
+        }));
+        
+        setStockLevels(stockWithStatus);
       } catch (error) {
         console.error("Error fetching stock levels:", error);
+      } finally {
+        setLoadingStock(false);
       }
     };
 
     const fetchFrequentItems = async () => {
+      setLoadingFrequent(true);
       try {
         const response = await fetch(
           `${import.meta.env.VITE_API_URL}/api/sales/most-frequent`
@@ -118,6 +140,8 @@ export default function Dashboard() {
         setFrequentItems(data);
       } catch (error) {
         console.error("Error fetching frequent items:", error);
+      } finally {
+        setLoadingFrequent(false);
       }
     };
 
@@ -135,187 +159,218 @@ export default function Dashboard() {
     }).format(amount);
   };
 
-  // const fetchFlaskPrediction = async () => {
-  //   setIsFlaskLoading(true);
-  //   setFlaskError(null);
-    
-  //   try {
-  //     const response = await fetch(
-  //       `${import.meta.env.VITE_API_URL}/api/predictions/flask-prediction?months_ahead=6`
-  //     );
-      
-  //     if (!response.ok) {
-  //       const errorData = await response.json();
-  //       throw new Error(errorData.message || 'Failed to fetch predictions from Flask server');
-  //     }
-      
-  //     const data = await response.json();
-  //     setFlaskPredictions(data.predictions);
-  //   } catch (error) {
-  //     console.error("Error fetching Flask predictions:", error);
-  //     setFlaskError(error instanceof Error ? error.message : 'Unknown error occurred');
-  //   } finally {
-  //     setIsFlaskLoading(false);
-  //   }
-  // };
+  // Skeleton components for loading states
+  const CardSkeleton = () => (
+    <Card className="flex flex-col items-center">
+      <CardHeader className="w-full text-center">
+        <Skeleton className="h-6 w-32 mx-auto" />
+      </CardHeader>
+      <CardContent className="flex items-center justify-center">
+        <Skeleton className="h-16 w-16 rounded-full" />
+      </CardContent>
+      <CardFooter>
+        <Skeleton className="h-8 w-28" />
+      </CardFooter>
+    </Card>
+  );
 
-  // const trainFlaskModel = async () => {
-  //   setIsFlaskLoading(true);
-  //   setFlaskError(null);
-    
-  //   try {
-  //     const response = await fetch(
-  //       `${import.meta.env.VITE_API_URL}/api/predictions/train-flask-model`,
-  //       { method: 'POST' }
-  //     );
-      
-  //     if (!response.ok) {
-  //       const errorData = await response.json();
-  //       throw new Error(errorData.message || 'Failed to train model on Flask server');
-  //     }
-      
-  //     // After training, fetch updated predictions
-  //     await fetchFlaskPrediction();
-  //   } catch (error) {
-  //     console.error("Error training Flask model:", error);
-  //     setFlaskError(error instanceof Error ? error.message : 'Unknown error occurred');
-  //   } finally {
-  //     setIsFlaskLoading(false);
-  //   }
-  // };
+  const StockSkeleton = () => (
+    <div className="space-y-3 pr-4">
+      {Array(5).fill(0).map((_, i) => (
+        <div key={i} className="flex items-center justify-between pb-2 border-b">
+          <div className="space-y-1">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+          <Skeleton className="h-6 w-16 rounded-full" />
+        </div>
+      ))}
+    </div>
+  );
+
+  const FrequentItemsSkeleton = () => (
+    <div className="space-y-2 pr-4">
+      {Array(5).fill(0).map((_, i) => (
+        <div key={i} className="flex flex-col pb-2 border-b">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-4 w-8" />
+          </div>
+          <Skeleton className="h-3 w-20 mt-1" />
+        </div>
+      ))}
+    </div>
+  );
+
+  const ChartSkeleton = () => (
+    <div className="space-y-4">
+      <Skeleton className="h-8 w-48" />
+      <Skeleton className="h-[400px] w-full rounded-lg" />
+    </div>
+  );
 
   return (
     <div className="w-full">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card className="flex flex-col items-center">
-          <CardHeader className="w-full text-center">
-            <CardTitle className="text-lg">Total Revenue</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-center">
-            <div className="rounded-full bg-primary/10 p-4">
-              <PhilippinePeso className="h-8 w-8 text-primary" />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <p className="text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
-          </CardFooter>
-        </Card>
+        {loadingRevenue ? (
+          <CardSkeleton />
+        ) : (
+          <Card className="flex flex-col items-center">
+            <CardHeader className="w-full text-center">
+              <CardTitle className="text-lg">Total Revenue</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center">
+              <div className="rounded-full bg-primary/10 p-4">
+                <PhilippinePeso className="h-8 w-8 text-primary" />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <p className="text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
+            </CardFooter>
+          </Card>
+        )}
 
-        <Card className="flex flex-col items-center">
-          <CardHeader className="w-full text-center">
-            <CardTitle className="text-lg">Ongoing Orders</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-center">
-            <div className="rounded-full bg-primary/10 p-4">
-              <ShoppingCart className="h-8 w-8 text-primary" />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <p className="text-2xl font-bold">{ongoingOrders} Orders Today</p>
-          </CardFooter>
-        </Card>
+        {loadingOrders ? (
+          <CardSkeleton />
+        ) : (
+          <Card className="flex flex-col items-center">
+            <CardHeader className="w-full text-center">
+              <CardTitle className="text-lg">Ongoing Orders</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center">
+              <div className="rounded-full bg-primary/10 p-4">
+                <ShoppingCart className="h-8 w-8 text-primary" />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <p className="text-2xl font-bold">{ongoingOrders} Orders Today</p>
+            </CardFooter>
+          </Card>
+        )}
 
-        <Card className="flex flex-col items-center">
-          <CardHeader className="w-full text-center">
-            <CardTitle className="text-lg">Sales Today</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-center">
-            <div className="rounded-full bg-primary/10 p-4">
-              <TrendingUp className="h-8 w-8 text-primary" />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <p className="text-2xl font-bold">
-              {recentSales.length > 0
-                ? formatCurrency(recentSales[0].amount)
-                : "No sales today"}
-            </p>
-          </CardFooter>
-        </Card>
+        {loadingSales ? (
+          <CardSkeleton />
+        ) : (
+          <Card className="flex flex-col items-center">
+            <CardHeader className="w-full text-center">
+              <CardTitle className="text-lg">Sales Today</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center">
+              <div className="rounded-full bg-primary/10 p-4">
+                <TrendingUp className="h-8 w-8 text-primary" />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <p className="text-2xl font-bold">
+                {recentSales.length > 0
+                  ? formatCurrency(recentSales[0].amount)
+                  : "No sales today"}
+              </p>
+            </CardFooter>
+          </Card>
+        )}
 
-        <Card className="flex flex-col">
-          <CardHeader className="text-center">
-            <CardTitle className="text-lg">Top Products</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {frequentItems.slice(0, 3).map((item) => (
-                <div
-                  key={item.product_id}
-                  className="flex items-center justify-between"
-                >
-                  <span className="text-sm truncate flex-1">
-                    {item.product_name}
-                  </span>
-                  <span className="text-sm font-medium">
-                    {item.total_quantity}
-                  </span>
+        {loadingFrequent ? (
+          <Card className="flex flex-col">
+            <CardHeader className="text-center pb-2">
+              <CardTitle className="text-lg">Top Sold Products</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[120px]">
+                <FrequentItemsSkeleton />
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="flex flex-col">
+            <CardHeader className="text-center pb-2">
+              <CardTitle className="text-lg">Top Sold Products</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[120px]">
+                <div className="space-y-2 pr-4">
+                  {frequentItems.slice(0, 5).map((item) => (
+                    <div
+                      key={item.product_id}
+                      className="flex flex-col pb-2 border-b"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium truncate flex-1">
+                          {item.product_name}
+                        </span>
+                        <span className="text-sm font-medium">
+                          {item.sold_count}
+                        </span>
+                      </div>
+                      {item.variant_name && (
+                        <span className="text-xs text-muted-foreground">
+                          {item.variant_name}
+                        </span>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Chart on left */}
         <div className="lg:col-span-2 h-full">
-          <LineChartInteractive />
+          {loadingRevenue || loadingSales ? (
+            <Card className="h-full">
+              <CardContent className="p-6">
+                <ChartSkeleton />
+              </CardContent>
+            </Card>
+          ) : (
+            <LineChartInteractive />
+          )}
         </div>
-        {/* Small cards grid on right - Now a flex column with full height */}
-        <div className="flex flex-col gap-4 h-full">
-          {/* Recent Sales - with scrollable content */}
-          <Card className="flex-1">
-            <CardHeader>
-              <CardTitle className="text-lg">Recent Sales</CardTitle>
-            </CardHeader>
-            <CardContent className="overflow-y-auto" style={{ maxHeight: "200px" }}>
-              <div className="space-y-3">
-                {recentSales.map((sale) => (
-                  <div key={sale.id} className="flex items-center justify-between pb-2 border-b">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Customer</p>
-                      <p className="text-sm text-muted-foreground">{sale.date}</p>
-                    </div>
-                    <p className="text-sm font-medium">₱{sale.amount.toLocaleString()}</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        {/* Right column with Stock Alerts taking full height */}
+        <div className="flex flex-col h-full">
           {/* Stock Alerts - with scrollable content */}
           <Card className="flex-1">
             <CardHeader>
               <CardTitle className="text-lg">Stock Alerts</CardTitle>
               <CardDescription>Low stock items</CardDescription>
             </CardHeader>
-            <CardContent className="overflow-y-auto" style={{ maxHeight: "200px" }}>
-              <div className="space-y-3">
-                {stockLevels.map((item) => (
-                  <div key={item.product_id} className="flex items-center justify-between pb-2 border-b">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium truncate">{item.product_name}</p>
-                      <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
-                    </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      item.status === 'Low'
-                        ? 'bg-red-100 text-red-800'
-                        : item.status === 'Medium'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-green-100 text-green-800'
-                    }`}>{item.status}</span>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                {loadingStock ? (
+                  <StockSkeleton />
+                ) : (
+                  <div className="space-y-3 pr-4">
+                    {stockLevels
+                      // Sort by status priority: Low first, then Medium, then Good
+                      .sort((a, b) => {
+                        const priority = { 'Low': 0, 'Medium': 1, 'Good': 2 };
+                        return (priority[a.status as keyof typeof priority] || 0) - (priority[b.status as keyof typeof priority] || 0);
+                      })
+                      .map((item) => (
+                      <div key={item.product_id} className="flex items-center justify-between pb-2 border-b">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium truncate">{item.product_name}</p>
+                          <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                        </div>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          item.status === 'Low'
+                            ? 'bg-red-100 text-red-800'
+                            : item.status === 'Medium'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-green-100 text-green-800'
+                        }`}>{item.status}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )}
+              </ScrollArea>
             </CardContent>
           </Card>
         </div>
       </div>
-
-      {/* Flask Predictions Section */}
-      {/* <div className="mt-6">
-        <FlaskPredictionChart />
-      </div> */}
     </div>
   );
 }

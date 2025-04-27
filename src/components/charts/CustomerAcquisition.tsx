@@ -18,6 +18,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // configuration for revenue data
 const chartConfig = {
@@ -84,12 +85,38 @@ export function CustomerAcquisition() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Revenue Trend</CardTitle>
-          <CardDescription>Last 6 months</CardDescription>
+          <CardTitle className="flex items-center">
+            <DollarSign className="mr-2 h-5 w-5" />
+            <Skeleton className="h-5 w-40" />
+          </CardTitle>
+          <CardDescription><Skeleton className="h-4 w-32" /></CardDescription>
         </CardHeader>
-        <CardContent className="flex items-center justify-center h-[350px]">
-          Loading revenue data...
+        <CardContent>
+          <div className="h-[350px] flex flex-col justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+            </div>
+            
+            <div className="grid grid-cols-6 gap-2 mb-8">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="flex flex-col items-center">
+                  <Skeleton className="h-[100px] w-[40px] mb-2" />
+                  <Skeleton className="h-3 w-12" />
+                </div>
+              ))}
+            </div>
+            
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+          </div>
         </CardContent>
+        <CardFooter>
+          <Skeleton className="h-4 w-full" />
+        </CardFooter>
       </Card>
     )
   }

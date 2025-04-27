@@ -63,6 +63,7 @@ import {
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { Skeleton } from "@/components/ui/skeleton"
 
 type UserManagement = {
   id: string
@@ -81,7 +82,7 @@ const formSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   first_name: z.string().optional(),
   last_name: z.string().optional(),
-  role: z.enum(["SUPER_ADMIN", "admin", "accountant", "warehouse", "editor", "viewer", "customer"]),
+  role: z.enum(["SUPER_ADMIN", "admin", "accountant", "warehouse", "customer"]),
 })
 
 type FormSchema = z.infer<typeof formSchema>
@@ -266,13 +267,6 @@ export function UserManagement() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(user.id)}
-              >
-                Copy user ID
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuLabel>Change Role</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => handleRoleUpdate("SUPER_ADMIN")}>
                 Make Super Admin
@@ -285,15 +279,6 @@ export function UserManagement() {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleRoleUpdate("warehouse")}>
                 Make Warehouse Manager
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleRoleUpdate("editor")}>
-                Make Editor
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleRoleUpdate("viewer")}>
-                Make Viewer
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleRoleUpdate("customer")}>
-                Make Customer
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
@@ -330,8 +315,57 @@ export function UserManagement() {
 
   if (loading) {
     return (
-      <div className="flex h-[200px] w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="w-full space-y-6">
+        {/* Page header skeleton */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-4 gap-4">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-8 w-36" />
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-[300px]" />
+          </div>
+        </div>
+
+        {/* Table skeleton */}
+        <div className="rounded-md border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {Array(8).fill(0).map((_, i) => (
+                  <TableHead key={`skeleton-header-${i}`}>
+                    <Skeleton className="h-5 w-24" />
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array(6).fill(0).map((_, rowIndex) => (
+                <TableRow key={`skeleton-row-${rowIndex}`}>
+                  <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-36" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-8 rounded-full" /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        
+        {/* Pagination skeleton */}
+        <div className="flex flex-col sm:flex-row items-center justify-end gap-4 py-4">
+          <Skeleton className="h-5 w-48" />
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-20" />
+            <Skeleton className="h-9 w-20" />
+          </div>
+        </div>
       </div>
     )
   }
@@ -615,8 +649,6 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="accountant">Accountant</SelectItem>
                   <SelectItem value="warehouse">Warehouse Manager</SelectItem>
-                  <SelectItem value="editor">Editor</SelectItem>
-                  <SelectItem value="viewer">Viewer</SelectItem>
                   <SelectItem value="customer">Customer</SelectItem>
                 </SelectContent>
               </Select>

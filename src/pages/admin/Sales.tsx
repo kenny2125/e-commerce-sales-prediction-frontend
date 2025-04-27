@@ -16,6 +16,7 @@ import { SalesPrediction } from "@/components/charts/SalesPrediction";
 import { SalesRecordsTable } from "@/components/admin/SalesRecordsTable";
 import { HistoricalSalesTable } from "@/components/admin/HistoricalSalesTable";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Interface for KPI data structure
 interface KpiData {
@@ -121,7 +122,21 @@ export default function Sales() {
         <div className="w-full lg:w-1/3 flex flex-col gap-4">
           {/* KPI Cards Row */}
           {kpiLoading ? (
-            <Card><CardContent className="pt-6">Loading KPIs...</CardContent></Card>
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* Skeleton KPI Cards */}
+              {[1, 2, 3, 4].map((i) => (
+                <Card key={i}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <Skeleton className="h-5 w-24" />
+                    <Skeleton className="h-4 w-4 rounded-full" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-8 w-28 mb-2" />
+                    <Skeleton className="h-3 w-full" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           ) : kpiError ? (
             <Card><CardContent className="pt-6 text-destructive">Error loading KPIs: {kpiError}</CardContent></Card>
           ) : kpiData ? (
