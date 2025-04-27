@@ -56,25 +56,6 @@ type ProductVariant = {
 // Define the columns as a function that accepts refreshData
 export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
   {
-    accessorKey: "id",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          ID
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center">
-        {row.getValue("id")}
-      </div>
-    ),
-  },
-  {
     accessorKey: "category",
     header: ({ column }) => {
       return (
@@ -87,11 +68,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
         </Button>
       );
     },
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center">
-        {row.getValue("category")}
-      </div>
-    ),
+    cell: ({ row }) => <div>{row.getValue("category")}</div>,
   },
   {
     accessorKey: "brand",
@@ -106,11 +83,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
         </Button>
       );
     },
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center">
-        {row.getValue("brand")}
-      </div>
-    ),
+    cell: ({ row }) => <div>{row.getValue("brand")}</div>,
   },
   {
     accessorKey: "product_name",
@@ -125,11 +98,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
         </Button>
       );
     },
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center">
-        {row.getValue("product_name")}
-      </div>
-    ),
+    cell: ({ row }) => <div>{row.getValue("product_name")}</div>,
   },
   {
     accessorKey: "status",
@@ -148,7 +117,7 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
       const status = row.getValue("status") as string;
       
       return (
-        <div className="flex items-center justify-center px-4">
+        <div>
           <Badge 
             variant={status === "Out of Stock" ? "destructive" : "default"} 
             className={
@@ -183,11 +152,9 @@ export const getColumns = (refreshData: () => void): ColumnDef<Inventory>[] => [
       const totalQuantity = parseInt(row.original.total_quantity as unknown as string) || 0;
       
       return (
-        <div className="text-center">
-          <div className="flex flex-col items-center">
-            <span className="font-medium">{variantCount} variant{variantCount !== 1 ? 's' : ''}</span>
-            <span className="text-xs text-muted-foreground">Total Qty: {totalQuantity}</span>
-          </div>
+        <div>
+          <span className="font-medium">{variantCount} variant{variantCount !== 1 ? 's' : ''}</span>
+          <span className="text-xs text-muted-foreground block">Total Qty: {totalQuantity}</span>
         </div>
       );
     },

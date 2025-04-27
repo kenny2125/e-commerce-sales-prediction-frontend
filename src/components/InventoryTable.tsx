@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-// A new functional component for rendering the table
+// A functional component for rendering the table with consistent alignment
 export function InventoryTable({ table, columns }: { table: any; columns: any[] }) {
   return (
     <div className="rounded-md border">
@@ -18,7 +18,7 @@ export function InventoryTable({ table, columns }: { table: any; columns: any[] 
           {table.getHeaderGroups().map((headerGroup: any) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header: any) => (
-                <TableHead key={header.id}>
+                <TableHead key={header.id} className="whitespace-nowrap">
                   {header.isPlaceholder
                     ? null
                     : flexRender(header.column.columnDef.header, header.getContext())}
@@ -32,7 +32,7 @@ export function InventoryTable({ table, columns }: { table: any; columns: any[] 
             table.getRowModel().rows.map((row: any) => (
               <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                 {row.getVisibleCells().map((cell: any) => (
-                  <TableCell key={cell.id}>
+                  <TableCell key={cell.id} className="whitespace-nowrap">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}

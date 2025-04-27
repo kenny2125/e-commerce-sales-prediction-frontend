@@ -20,7 +20,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { Check, ChevronsUpDown, PlusCircle, XCircle, Minus, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, PlusCircle, XCircle, Minus, Plus, PencilIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Inventory } from "@/components/admin/InventoryColumns";
 import { toast } from "sonner";
@@ -208,6 +208,22 @@ export function EditProductForm({ initialData, onSuccess, isLoading = false }: E
       ...editingVariant,
       [field]: value
     });
+    
+    // Realtime validation for SKU uniqueness
+    if (field === "sku" && value) {
+      const duplicateSku = variants.some(
+        v => v.sku === value && v.id !== editingVariant.id
+      );
+      
+      if (duplicateSku) {
+        setVariantFormError("A variant with this SKU already exists");
+      } else {
+        // Only clear the error if it was a duplicate SKU error
+        if (variantFormError === "A variant with this SKU already exists") {
+          setVariantFormError(null);
+        }
+      }
+    }
   };
 
   // Process and handle variant image
@@ -567,6 +583,33 @@ export function EditProductForm({ initialData, onSuccess, isLoading = false }: E
         {/* Remove Store Price Field */}
         
         {/* Remove Description Field */}
+        
+        {/* Product Form Guide */}
+        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-100 dark:border-blue-800">
+          <h4 className="font-medium text-sm mb-2 text-blue-700 dark:text-blue-300">How to Use This Form</h4>
+          <ul className="space-y-2 text-sm text-blue-600 dark:text-blue-300">
+            <li className="flex items-start">
+              <div className="mr-2 mt-0.5">•</div>
+              <p><strong>Product Information:</strong> Update the basic details like category, brand, and product name.</p>
+            </li>
+            <li className="flex items-start">
+              <div className="mr-2 mt-0.5">•</div>
+              <p><strong>Variants:</strong> Add different versions of your product (size, color, etc.) on the right panel.</p>
+            </li>
+            <li className="flex items-start">
+              <div className="mr-2 mt-0.5">•</div>
+              <p><strong>Each Variant:</strong> Must have a unique SKU, name, price, and quantity.</p>
+            </li>
+            <li className="flex items-start">
+              <div className="mr-2 mt-0.5">•</div>
+              <p><strong>Images:</strong> Upload clear product images for each variant to improve visibility.</p>
+            </li>
+            <li className="flex items-start">
+              <div className="mr-2 mt-0.5">•</div>
+              <p>Click <strong>Update Product</strong> when you've finished making changes.</p>
+            </li>
+          </ul>
+        </div>
       </div>
 
       {/* Right Column: Product Variants load the data from product_variant here */}
@@ -753,7 +796,7 @@ export function EditProductForm({ initialData, onSuccess, isLoading = false }: E
             </div>
           ) : (
             <ScrollArea className="h-full pr-4">
-              <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
                 {variants.map((variant) => (
                   <Card key={variant.id} className="overflow-hidden">
                     <CardHeader className="p-3 pb-0">
@@ -769,7 +812,7 @@ export function EditProductForm({ initialData, onSuccess, isLoading = false }: E
                             className="h-7 w-7"
                             onClick={() => handleEditVariant(variant)}
                           >
-                            <PlusCircle className="h-4 w-4" />
+                            <PencilIcon className="h-4 w-4" />
                             <span className="sr-only">Edit</span>
                           </Button>
                           <Button 

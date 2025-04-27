@@ -82,18 +82,17 @@ export function CartDialog() {
 
     // Fetch up-to-date product variant details
     try {
-      // *** IMPORTANT: Update this endpoint on your backend ***
-      const response = await fetch(`${API_URL}/api/cart/variant-details`, { // Assuming a new/updated endpoint
+      const response = await fetch(`${API_URL}/api/cart/variant-details`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Send product_id and sku pairs
         body: JSON.stringify({ items: localItems.map(i => ({ product_id: i.product_id, sku: i.sku })) })
       });
 
       if (!response.ok) throw new Error('Failed to fetch product variant details');
 
-      // Expecting format: { product_id: string, sku: string, product_name: string, variant_name: string | null, store_price: number, image_url: string | null, stock: number }[]
+      // Get variant details with stock information
       const details: Array<Omit<CartItem, 'quantity'>> = await response.json();
+      console.log('Fetched variant details:', details); // Log for debugging
 
       // Merge stored quantities with fetched details
       const merged: CartItem[] = details.map(d => {
@@ -101,7 +100,7 @@ export function CartDialog() {
         // Clamp quantity based on fetched stock, ensure local item exists
         const quantity = local ? Math.min(local.quantity, d.stock) : 0;
         return { ...d, quantity };
-      }).filter(item => item.quantity > 0); // Filter out items that might have become unavailable or had quantity 0
+      }).filter(item => item.quantity > 0 && item.stock > 0); // Filter out items that are unavailable or have no stock
 
       setCartItems(merged);
 
