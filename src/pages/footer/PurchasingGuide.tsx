@@ -1,5 +1,5 @@
 import React from "react";
-import { ShoppingCart, ListOrdered, Settings, Truck, RefreshCcw, HelpCircle } from "lucide-react";
+import { ShoppingCart, UserPlus, ClipboardCheck, Bell, Truck } from "lucide-react";
 
 const PurchasingGuide: React.FC = () => {
   return (
@@ -11,53 +11,44 @@ const PurchasingGuide: React.FC = () => {
         <p className="text-gray-500 dark:text-gray-400 text-base">A step-by-step guide to a smooth shopping experience.</p>
       </div>
       <div className="flex flex-col gap-8">
+        {/* Step 1: Register */}
         <div className="flex items-start gap-4">
-          <ListOrdered className="w-6 h-6 text-blue-500 mt-1" />
+          <UserPlus className="w-6 h-6 text-blue-500 mt-1" />
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Step 1: Assess Your Needs</h2>
-            <p className="text-gray-600 dark:text-gray-300 text-sm">Determine your requirements (home, gaming, office, etc.) to narrow down your options and avoid overspending.</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Step 1: Register or Log In</h2>
+            <p className="text-gray-600 dark:text-gray-300 text-sm">Create a new account or log in to your existing account to start shopping.</p>
           </div>
         </div>
+        {/* Step 2: Add Items to Cart */}
         <div className="flex items-start gap-4">
-          <Settings className="w-6 h-6 text-green-500 mt-1" />
+          <ShoppingCart className="w-6 h-6 text-green-500 mt-1" />
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Step 2: Set a Budget</h2>
-            <p className="text-gray-600 dark:text-gray-300 text-sm">Decide on a budget, considering long-term costs like upgrades and warranties.</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Step 2: Add Items to Cart</h2>
+            <p className="text-gray-600 dark:text-gray-300 text-sm">Browse our products and add the items you wish to purchase to your shopping cart.</p>
           </div>
         </div>
+        {/* Step 3: Place Order */}
         <div className="flex items-start gap-4">
-          <Settings className="w-6 h-6 text-yellow-500 mt-1" />
+          <ClipboardCheck className="w-6 h-6 text-yellow-500 mt-1" />
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Step 3: Choose Specifications</h2>
-            <p className="text-gray-600 dark:text-gray-300 text-sm">Select CPU, RAM, storage, and other specs based on your needs. SSDs are faster, HDDs are cheaper for bulk storage.</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Step 3: Place Your Order</h2>
+            <p className="text-gray-600 dark:text-gray-300 text-sm">Proceed to checkout, review your order, and select either Store Pickup or Delivery. Payment is Cash on Delivery (COD). Confirm your purchase.</p>
           </div>
         </div>
+        {/* Step 4: Wait for Updates */}
         <div className="flex items-start gap-4">
-          <HelpCircle className="w-6 h-6 text-purple-500 mt-1" />
+          <Bell className="w-6 h-6 text-purple-500 mt-1" />
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Step 4: Compare Products</h2>
-            <p className="text-gray-600 dark:text-gray-300 text-sm">Compare performance, display, battery, and reviews to find the best fit.</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Step 4: Check Order Status</h2>
+            <p className="text-gray-600 dark:text-gray-300 text-sm">You can check the status of your order, including confirmation and shipping updates, in your account section on our website/app.</p>
           </div>
         </div>
-        <div className="flex items-start gap-4">
-          <ShoppingCart className="w-6 h-6 text-orange-500 mt-1" />
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Step 5: Checkout</h2>
-            <p className="text-gray-600 dark:text-gray-300 text-sm">Add items to your cart, choose shipping and payment options, and confirm your order.</p>
-          </div>
-        </div>
+        {/* Step 5: Wait for Delivery */}
         <div className="flex items-start gap-4">
           <Truck className="w-6 h-6 text-cyan-500 mt-1" />
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Step 6: Track Your Order</h2>
-            <p className="text-gray-600 dark:text-gray-300 text-sm">Use tracking details to monitor delivery. Contact support for issues or arrange pickup if needed.</p>
-          </div>
-        </div>
-        <div className="flex items-start gap-4">
-          <RefreshCcw className="w-6 h-6 text-pink-500 mt-1" />
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Step 7: Review Return Policy</h2>
-            <p className="text-gray-600 dark:text-gray-300 text-sm">Understand return/exchange conditions and timeframes before purchasing.</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Step 5: Wait for Delivery</h2>
+            <p className="text-gray-600 dark:text-gray-300 text-sm">Track your package using the provided tracking number and wait for it to arrive at your doorstep.</p>
           </div>
         </div>
       </div>
