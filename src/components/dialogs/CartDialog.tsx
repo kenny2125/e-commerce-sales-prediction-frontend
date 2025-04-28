@@ -122,10 +122,6 @@ export function CartDialog() {
   };
 
   const handleCheckout = () => {
-    if (!currentUser) {
-      setLoginDialogOpen(true);
-      return;
-    }
     // Filter cart items to only include selected ones based on composite key
     const selectedProducts = cartItems.filter(item =>
       selectedItems.includes(`${item.product_id}-${item.sku}`)
@@ -139,13 +135,13 @@ export function CartDialog() {
 
     // Store selected items (full details) in localStorage for checkout page
     localStorage.setItem('checkoutItems', JSON.stringify(selectedProducts));
-
-    // Option 1: Remove selected items from cart immediately
-    // const remainingCartItems = cartItems.filter(item =>
-    //   !selectedItems.includes(`${item.product_id}-${item.sku}`)
-    // );
-    // setCartItems(remainingCartItems);
-    // localStorage.setItem('cartItems', JSON.stringify(remainingCartItems.map(i => ({ product_id: i.product_id, sku: i.sku, quantity: i.quantity }))));
+    
+    // Store a flag indicating if this is a guest checkout
+    if (!currentUser) {
+      localStorage.setItem('isGuestCheckout', 'true');
+    } else {
+      localStorage.removeItem('isGuestCheckout');
+    }
 
     // Option 2: Keep cart intact, just clear selection (current approach)
     setSelectedItems([]);
@@ -432,9 +428,9 @@ export function CartDialog() {
             type="button" 
             onClick={handleCheckout} 
             className="w-full md:w-auto"
-            disabled={cartItems.length === 0 || selectedItems.length === 0 || !currentUser}
+            disabled={cartItems.length === 0 || selectedItems.length === 0}
           >
-            Proceed to Invoice
+            Proceed to Checkout
           </Button>
         </DialogFooter>        
       </DialogContent>

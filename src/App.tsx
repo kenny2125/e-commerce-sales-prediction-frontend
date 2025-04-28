@@ -10,6 +10,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 import Home from "./pages/Home";
 import ProductDetail from "./pages/customer/ProductDetail";
+import AdminLogin from "./pages/admin/AdminLogin";
 
 import AboutUs from "./pages/footer/AboutUs";
 import FAQ from "./pages/footer/FAQ";
@@ -31,6 +32,7 @@ const AppContent: React.FC = () => {
   const location = useLocation();
   const adminPaths = ["/dashboard", "/users", "/inventory", "/orders", "/sales"];
   const isAdminPage = adminPaths.some(path => location.pathname.startsWith(path));
+  const isAdminLoginPage = location.pathname === "/admin";
   const paddingClasses = isAdminPage ? "px-4" : "sm:px-[175px] md:px-[100px] lg:px-[300px]";
 
   return (
@@ -39,7 +41,7 @@ const AppContent: React.FC = () => {
         {/* Add Sonner Toaster */}
         <Toaster position="top-center" richColors />
         <div className={paddingClasses}>
-          <Header />
+          {!isAdminLoginPage && <Header />}
 
           <Routes>
             <Route index element={<Home />} />
@@ -49,6 +51,9 @@ const AppContent: React.FC = () => {
             <Route path="/product" element={<ProductDetail />} />
             {/* <Route path="/build" element={<PackageDetail />} /> */}
             <Route path="/checkout" element={<Checkout />} />
+            
+            {/* Admin login route */}
+            <Route path="/admin" element={<AdminLogin />} />
 
             <Route path="/about-us" element={<AboutUs />} />
             <Route path="/faq" element={<FAQ />} />
@@ -87,7 +92,7 @@ const AppContent: React.FC = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
 
-          <Footer />
+          {!isAdminLoginPage && !isAdminPage && <Footer />}
         </div>
       </ThemeProvider>
     </HelmetProvider>

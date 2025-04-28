@@ -9,15 +9,16 @@ import {
   ScrollText,
   Menu,
   Users,
+  ShoppingCart,
 } from "lucide-react";
 import { ProfileDialog } from "./dialogs/ProfileDialog";
 import { OrderDialog } from "./dialogs/OrderDialog";
 import { CartDialog } from "./dialogs/CartDialog";
 import { ModeToggle } from "./ui/mode-toggle";
 import { LogInDialog } from "./dialogs/LogInDialog";
-import Logo from "./Logo";
 import { useUser } from "@/contexts/UserContext";
 import { Outlet, Link, useNavigate } from "react-router-dom";
+import logoImage from "../assets/logo.webp";
 import {
   NavigationMenu,
   NavigationMenuList,
@@ -278,7 +279,12 @@ export default function Header() {
         <div className="min-h-[4rem] lg:h-[8rem] flex flex-col lg:flex-row justify-between items-center w-full">
           {/* Logo - Left */}
           <div className="flex w-full lg:w-1/4 justify-between lg:justify-start items-center px-4 lg:px-0 py-2 lg:py-0">
-            <Logo />
+            <Link to="/" aria-label="Home" className="flex items-center gap-2">
+              <img src={logoImage} alt="1618 Office Solutions Logo" className="w-10 h-10 object-contain" />
+              <span className="hidden md:inline text-[2.5vw] lg:text-[1.8vw] xl:text-[1.4vw] font-bold whitespace-nowrap">
+                1618 Office Solutions Inc.
+              </span>
+            </Link>
             <div className="flex items-center gap-1 lg:hidden">
               <div className="text-primary text-sm flex flex-col items-end">
                 <span>{getGreeting()}</span>
@@ -346,13 +352,18 @@ export default function Header() {
           {/* Desktop view (lg and up) */}
           <div className="hidden lg:flex h-[8rem] items-center">
             <div>
-              <Logo />
+              <Link to="/" aria-label="Home" className="flex items-center gap-2">
+                <img src={logoImage} alt="1618 Office Solutions Logo" className="w-10 h-10 object-contain" />
+                <span className="text-[3.5vw] md:text-[2.5vw] lg:text-[1.8vw] xl:text-[1.4vw] font-bold whitespace-nowrap">
+                  1618 Office Solutions Inc.
+                </span>
+              </Link>
             </div>
             <div className="flex flex-1 justify-center">
               <div className="flex w-[520px] h-[53px] items-center gap-2">
                 <Input 
                   type="text" 
-                  placeholder="Search products by name, category, brand, variant or SKU" 
+                  placeholder="Search" 
                   onKeyDown={handleSearchKeyPress}
                 />
                 <Button type="submit" onClick={productSearch}>
@@ -370,7 +381,7 @@ export default function Header() {
                 </div>
               ) : (
                 <div className="inline-flex items-center gap-2">
-                  <LogInDialog />
+                  <CartDialog />
                   <ModeToggle />
                 </div>
               )}
@@ -380,7 +391,12 @@ export default function Header() {
           <div className="lg:hidden">
             {/* First row */}
             <div className="flex justify-between items-center px-4 py-2">
-              <Logo />
+              <Link to="/" aria-label="Home" className="flex items-center gap-2">
+                <img src={logoImage} alt="1618 Office Solutions Logo" className="w-8 h-8 object-contain" />
+                <span className="hidden xs:inline text-lg font-bold whitespace-nowrap">
+                  1618 Office Solutions
+                </span>
+              </Link>
               <div className="flex items-center gap-2">
                 <Button onClick={() => setMobileSearchOpen((prev) => !prev)}>
                   <Search />
@@ -390,9 +406,13 @@ export default function Header() {
                     <OrderDialog />
                     <CartDialog />
                     <ProfileDialog />
+                    <ModeToggle />
                   </div>
                 ) : (
-                  <LogInDialog />
+                  <div className="flex items-center gap-2">
+                    <CartDialog />
+                    <ModeToggle />
+                  </div>
                 )}
               </div>
             </div>
@@ -417,7 +437,7 @@ export default function Header() {
               <Input 
                 id="mobile-search-input" 
                 type="text" 
-                placeholder="Search products, brands, variants..." 
+                placeholder="Search" 
                 className="flex-1" 
                 onKeyDown={handleSearchKeyPress}
               />

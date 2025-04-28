@@ -35,6 +35,7 @@ export interface OrderDetail {
   paymentStatus: string;
   pickupStatus: string;
   customerName: string;
+  companyName?: string; // Added company name field
   orderDate: string;
   totalAmount: number;
   originalAmount?: number; // Original amount before discount
@@ -360,6 +361,7 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
           <h3>Order #${order.orderID}</h3>
           <div><span class="label">Date:</span> ${formatDate(order.orderDate)}</div>
           <div><span class="label">Customer:</span> ${order.customerName}</div>
+          ${order.companyName ? `<div><span class="label">Company:</span> ${order.companyName}</div>` : ''}
           <div><span class="label">Address:</span> ${order.address}</div>
           <div><span class="label">Contact:</span> ${order.contactNumber}</div>
           ${order.paymentMethod ? `<div><span class="label">Payment Method:</span> ${order.paymentMethod}</div>` : ''}
@@ -460,92 +462,98 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
               {/* Order Information */}
               <Card className="col-span-4 border-0 shadow-none">
                 <CardContent className="pt-3">
-                  <h2 className="text-xl font-bold mb-4">Order Information</h2>
-                  <dl className="space-y-4">
-                    <div className="grid grid-cols-2 py-2">
-                      <dt className="font-medium text-gray-600 dark:text-gray-300">Customer:</dt>
-                      <dd className="font-semibold">{order.customerName}</dd>
+                  <h2 className="text-base font-bold mb-3">Order Information</h2>
+                  <dl className="space-y-2">
+                    <div className="grid grid-cols-2 py-1">
+                      <dt className="text-sm font-medium text-gray-600 dark:text-gray-300">Customer:</dt>
+                      <dd className="text-sm font-medium">{order.customerName}</dd>
                     </div>
-                    <div className="grid grid-cols-2 py-2">
-                      <dt className="font-medium text-gray-600 dark:text-gray-300">Date:</dt>
-                      <dd className="font-semibold">{formatDate(order.orderDate)}</dd>
+                    {order.companyName && (
+                      <div className="grid grid-cols-2 py-1">
+                        <dt className="text-sm font-medium text-gray-600 dark:text-gray-300">Company:</dt>
+                        <dd className="text-sm font-medium">{order.companyName}</dd>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 py-1">
+                      <dt className="text-sm font-medium text-gray-600 dark:text-gray-300">Date:</dt>
+                      <dd className="text-sm font-medium">{formatDate(order.orderDate)}</dd>
                     </div>
-                    <div className="grid grid-cols-2 py-2">
-                      <dt className="font-medium text-gray-600 dark:text-gray-300">Address:</dt>
-                      <dd className="font-semibold">{order.address}</dd>
+                    <div className="grid grid-cols-2 py-1">
+                      <dt className="text-sm font-medium text-gray-600 dark:text-gray-300">Address:</dt>
+                      <dd className="text-sm font-medium">{order.address}</dd>
                     </div>
-                    <div className="grid grid-cols-2 py-2">
-                      <dt className="font-medium text-gray-600 dark:text-gray-300">Contact Number:</dt>
-                      <dd className="font-semibold">{order.contactNumber}</dd>
+                    <div className="grid grid-cols-2 py-1">
+                      <dt className="text-sm font-medium text-gray-600 dark:text-gray-300">Contact Number:</dt>
+                      <dd className="text-sm font-medium">{order.contactNumber}</dd>
                     </div>
                     {order.paymentMethod && (
-                      <div className="grid grid-cols-2 py-2">
-                        <dt className="font-medium text-gray-600 dark:text-gray-300">Payment Method:</dt>
-                        <dd className="font-semibold">{formatPaymentMethod(order.paymentMethod)}</dd>
+                      <div className="grid grid-cols-2 py-1">
+                        <dt className="text-sm font-medium text-gray-600 dark:text-gray-300">Payment Method:</dt>
+                        <dd className="text-sm font-medium">{formatPaymentMethod(order.paymentMethod)}</dd>
                       </div>
                     )}
                     {order.pickupMethod && (
-                      <div className="grid grid-cols-2 py-2">
-                        <dt className="font-medium text-gray-600 dark:text-gray-300">Delivery Method:</dt>
-                        <dd className="font-semibold">{formatDeliveryMethod(order.pickupMethod)}</dd>
+                      <div className="grid grid-cols-2 py-1">
+                        <dt className="text-sm font-medium text-gray-600 dark:text-gray-300">Delivery Method:</dt>
+                        <dd className="text-sm font-medium">{formatDeliveryMethod(order.pickupMethod)}</dd>
                       </div>
                     )}
                     {order.notes && (
-                      <div className="grid grid-cols-2 py-2">
-                        <dt className="font-medium text-gray-600 dark:text-gray-300">Notes:</dt>
-                        <dd className="font-semibold whitespace-pre-wrap">{order.notes}</dd>
+                      <div className="grid grid-cols-2 py-1">
+                        <dt className="text-sm font-medium text-gray-600 dark:text-gray-300">Notes:</dt>
+                        <dd className="text-sm font-medium whitespace-pre-wrap">{order.notes}</dd>
                       </div>
                     )}
-                    <div className="grid grid-cols-2 py-2">
-                      <dt className="font-medium text-gray-600 dark:text-gray-300">Payment Status:</dt>
+                    <div className="grid grid-cols-2 py-1">
+                      <dt className="text-sm font-medium text-gray-600 dark:text-gray-300">Payment Status:</dt>
                       <dd>
                         <Select 
                           defaultValue={paymentStatus}
                           onValueChange={(value) => handleUpdateStatus('paymentStatus', value)}
                           disabled={updatingStatus}
                         >
-                          <SelectTrigger className={`w-full h-9 ${getPaymentStatusColor(paymentStatus)}`}>
+                          <SelectTrigger className={`w-full h-8 text-xs ${getPaymentStatusColor(paymentStatus)}`}>
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Processing" className="bg-yellow-500 text-white my-1">
+                            <SelectItem value="Processing" className="bg-yellow-500 text-white my-1 text-xs">
                               Processing
                             </SelectItem>
-                            <SelectItem value="Paid" className="bg-green-500 text-white my-1">
+                            <SelectItem value="Paid" className="bg-green-500 text-white my-1 text-xs">
                               Paid
                             </SelectItem>
-                            <SelectItem value="Cancelled" className="bg-red-500 text-white my-1">
+                            <SelectItem value="Cancelled" className="bg-red-500 text-white my-1 text-xs">
                               Cancelled
                             </SelectItem>
-                            <SelectItem value="Refunded" className="bg-purple-500 text-white my-1">
+                            <SelectItem value="Refunded" className="bg-purple-500 text-white my-1 text-xs">
                               Refunded
                             </SelectItem>
                           </SelectContent>
                         </Select>
                       </dd>
                     </div>
-                    <div className="grid grid-cols-2 py-2">
-                      <dt className="font-medium text-gray-600 dark:text-gray-300">Pickup Status:</dt>
+                    <div className="grid grid-cols-2 py-1">
+                      <dt className="text-sm font-medium text-gray-600 dark:text-gray-300">Pickup Status:</dt>
                       <dd>
                         <Select 
                           defaultValue={pickupStatus}
                           onValueChange={(value) => handleUpdateStatus('pickupStatus', value)}
                           disabled={updatingStatus}
                         >
-                          <SelectTrigger className={`w-full h-9 ${getPickupStatusColor(pickupStatus)}`}>
+                          <SelectTrigger className={`w-full h-8 text-xs ${getPickupStatusColor(pickupStatus)}`}>
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Processing" className="bg-yellow-500 text-white my-1">
+                            <SelectItem value="Processing" className="bg-yellow-500 text-white my-1 text-xs">
                               Processing
                             </SelectItem>
-                            <SelectItem value="On Delivery" className="bg-blue-500 text-white my-1">
+                            <SelectItem value="On Delivery" className="bg-blue-500 text-white my-1 text-xs">
                               On Delivery
                             </SelectItem>
-                            <SelectItem value="Claimed" className="bg-green-500 text-white my-1">
+                            <SelectItem value="Claimed" className="bg-green-500 text-white my-1 text-xs">
                               Claimed
                             </SelectItem>
-                            <SelectItem value="Cancelled" className="bg-red-500 text-white my-1">
+                            <SelectItem value="Cancelled" className="bg-red-500 text-white my-1 text-xs">
                               Cancelled
                             </SelectItem>
                           </SelectContent>

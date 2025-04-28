@@ -113,9 +113,9 @@ function Home() {
         </div>
 
         {/* Furniture and Technology Categories (side by side on larger screens) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="flex flex-col md:flex-row gap-6">
           {/* Furniture Category */}
-          <Link to="/search" className="block relative h-[250px] overflow-hidden group cursor-pointer">
+          <Link to="/search" className="flex-1 block relative h-[250px] overflow-hidden group cursor-pointer">
             <img
               src={furnitureBanner}
               alt="Furniture"
@@ -132,7 +132,7 @@ function Home() {
           </Link>
 
           {/* Technology Category */}
-          <Link to="/search" className="block relative h-[250px] overflow-hidden group cursor-pointer">
+          <Link to="/search" className="flex-1 block relative h-[250px] overflow-hidden group cursor-pointer">
             <img
               src={technologyBanner}
               alt="Technology"
@@ -150,6 +150,51 @@ function Home() {
         </div>
       </section>
 
+      {/* Who Are We Section */}
+      <section className="container mx-auto px-4 mb-16 py-8 bg-muted/30 rounded-lg">
+        <div className="flex flex-col md:flex-row gap-8">
+          <div className="flex-1">
+            <h2 className="text-3xl font-bold mb-4">Who Are We?</h2>
+            <p className="mb-4">
+              1618 Office Solutions Inc. was established in 1999 and has since become a leader in providing comprehensive office solutions to businesses and educational institutions across the Philippines.
+            </p>
+            <p className="mb-4">
+              Our mission is to help our customers create efficient, comfortable, and productive workspaces by offering a wide range of high-quality office supplies, furniture, and technology products.
+            </p>
+            <p>
+              What sets us apart is our commitment to exceptional customer service, competitive pricing, and our deep understanding of office environments. Whether you're outfitting a small home office or a large corporate space, we have the solutions you need.
+            </p>
+          </div>
+          <div className="flex-1 flex justify-center">
+            <div className="bg-primary/10 p-8 rounded-lg max-w-md">
+              <h3 className="text-xl font-semibold mb-4">Our Values</h3>
+              <ul className="space-y-3">
+                <li className="flex items-start">
+                  <span className="text-primary font-bold mr-2">✓</span>
+                  <span>Quality products that stand the test of time</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-primary font-bold mr-2">✓</span>
+                  <span>Dedicated customer service and support</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-primary font-bold mr-2">✓</span>
+                  <span>Competitive pricing and special bulk discounts</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-primary font-bold mr-2">✓</span>
+                  <span>Extensive industry knowledge and expertise</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-primary font-bold mr-2">✓</span>
+                  <span>Environment-friendly product options</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* New & Featured Products Section */}
       <section className="container mx-auto px-4 mb-16">
         <h2 className="text-3xl font-bold mb-8">New & Featured Products</h2>
@@ -160,9 +205,11 @@ function Home() {
           </div>
         ) : featuredProducts.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            <div className="flex flex-wrap gap-4">
               {featuredProducts.map((product) => (
-                <ProductCard key={product.product_id} product={product} />
+                <div key={product.product_id} className="w-[calc(50%-8px)] md:w-[calc(33.333%-11px)] lg:w-[calc(20%-13px)]">
+                  <ProductCard product={product} />
+                </div>
               ))}
             </div>
             <div className="flex justify-center mt-8">
