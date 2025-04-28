@@ -1,11 +1,10 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { useNavigate } from 'react-router-dom'
 import { Button } from "@/components/ui/button"
-import { ShoppingCart, Eye, Trash2 } from 'lucide-react'
+import { Eye } from 'lucide-react'
 import defaultNoImage from '@/assets/image-placeholder.webp'
 import { useUser } from "@/contexts/UserContext"
-import { toast } from "sonner"
 
 interface ProductCardProps {
   product: {
@@ -20,57 +19,18 @@ interface ProductCardProps {
 
 function ProductCard({ product }: ProductCardProps) {
   const navigate = useNavigate();
-  const [isInCart, setIsInCart] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
   const { currentUser } = useUser();
-  
-  // On mount, check if product is already in user's cart (localStorage)
-  useEffect(() => {
-    if (!currentUser || currentUser.role === 'admin') return;
-    const stored = localStorage.getItem('cartItems');
-    const items = stored ? JSON.parse(stored) : [];
-    const exists = items.some((item: any) => item.product_id === product.product_id);
-    setIsInCart(exists);
-  }, [currentUser, product.product_id]);
   
   function handleCardClick() {
     window.scrollTo({ top: 0, behavior: 'smooth' }); // Add smooth scroll to top
     navigate(`/product?id=${product.product_id}`);
   }
   
-  const handleActionClick = useCallback((e: React.MouseEvent) => {
+  const handleViewDetails = (e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    if (currentUser?.role === 'admin') {
-      // Handle view action for admin
-      navigate(`/product?id=${product.product_id}`);
-      return;
-    }
-
-    if (!currentUser) {
-      toast.error("Please log in to add items to your cart");
-      return;
-    }
-
-    // Update localStorage cartItems
-    setIsLoading(true);
-    const stored = localStorage.getItem('cartItems');
-    const items = stored ? JSON.parse(stored) : [];
-
-    if (isInCart) {
-      const updated = items.filter((item: any) => item.product_id !== product.product_id);
-      localStorage.setItem('cartItems', JSON.stringify(updated));
-      toast.success("Item removed from cart");
-      setIsInCart(false);
-    } else {
-      const updated = [...items, { product_id: product.product_id, quantity: 1 }];
-      localStorage.setItem('cartItems', JSON.stringify(updated));
-      toast.success("Item added to cart");
-      setIsInCart(true);
-    }
-    setIsLoading(false);
-  }, [currentUser, isInCart, navigate, product.product_id]);
+    navigate(`/product?id=${product.product_id}`);
+  };
 
   // Format price using Intl.NumberFormat for consistent formatting
   const formattedPrice = new Intl.NumberFormat('en-PH', {
@@ -107,46 +67,15 @@ function ProductCard({ product }: ProductCardProps) {
         </div>
       </CardContent>
       <CardFooter className="px-2 sm:px-3 md:px-4 pb-3 sm:pb-4 pt-0">
-        {currentUser?.role === 'admin' ? (
-          <Button 
-            variant="default"
-            size="sm"
-            onClick={handleActionClick}
-            className="w-full flex items-center justify-center gap-1 sm:gap-2 text-[10px] xs:text-xs sm:text-sm"
-          >
-            <Eye size={14} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
-            <span className="whitespace-nowrap">View Details</span>
-          </Button>
-        ) : product.total_quantity === 0 ? ( // Use total_quantity here
-          <Button 
-            variant="outline" 
-            size="sm" 
-            disabled 
-            className="w-full text-[10px] xs:text-xs sm:text-sm"
-          >
-            Out of Stock
-          </Button>
-        ) : (
-          <Button 
-            variant={isInCart ? "destructive" : "default"} 
-            size="sm" 
-            onClick={handleActionClick}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-1 sm:gap-2 text-[10px] xs:text-xs sm:text-sm"
-          >
-            {isInCart ? (
-              <>
-                <Trash2 size={14} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
-                <span className="whitespace-nowrap">Remove from Cart</span>
-              </>
-            ) : (
-              <>
-                <ShoppingCart size={14} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
-                <span className="whitespace-nowrap">Add to Cart</span>
-              </>
-            )}
-          </Button>
-        )}
+        <Button 
+          variant="default"
+          size="sm"
+          onClick={handleViewDetails}
+          className="w-full flex items-center justify-center gap-1 sm:gap-2 text-[10px] xs:text-xs sm:text-sm"
+        >
+          <Eye size={14} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
+          <span className="whitespace-nowrap">View Details</span>
+        </Button>
       </CardFooter>
     </Card>
   )

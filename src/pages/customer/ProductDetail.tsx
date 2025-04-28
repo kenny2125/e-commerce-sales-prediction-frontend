@@ -179,7 +179,7 @@ function ProductDetail() {
       <div className="flex flex-col gap-4 items-center w-full">
         {/* Variant Selector */}
         {product.variants && product.variants.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 mb-2 w-full max-w-sm">
+          <div className="flex flex-wrap gap-2 mb-2 w-full max-w-sm">
             {product.variants.map((variant: ProductVariant, idx: number) => (
               <Button
                 key={`${variant.sku || idx}`} // Use SKU as key if available, fallback to index
@@ -189,7 +189,7 @@ function ProductDetail() {
                   setSelectedVariantIndex(idx);
                   setImageError(false); // Reset image error on variant change
                 }}
-                className="w-full"
+                className="flex-grow min-w-fit"
               >
                 {variant.variant_name || `Variant ${idx + 1}`}
               </Button>
