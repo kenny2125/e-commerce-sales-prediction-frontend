@@ -121,14 +121,9 @@ export default function Search() {
       // Price filter
       const matchesPrice = product.store_price <= priceRange[0];
       
-      // Text search filter (if no query parameter, show all products)
-      const query = searchParams.get("query")?.toLowerCase() || "";
-      const matchesSearch = !query || 
-        product.product_name.toLowerCase().includes(query) ||
-        product.category.toLowerCase().includes(query) ||
-        product.brand.toLowerCase().includes(query);
-
-      return matchesCategory && matchesPrice && matchesSearch;
+      // The query parameter-based filtering is now handled by the backend's enhanced search
+      // This client-side filtering only applies additional filters (category, price)
+      return matchesCategory && matchesPrice;
     })
     .sort((a, b) => {
       switch (sortBy) {

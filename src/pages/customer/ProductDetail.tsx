@@ -121,6 +121,12 @@ function ProductDetail() {
       return;
     }
 
+    // Check if item is out of stock - prevent adding to cart
+    if (selectedVariant.quantity <= 0) {
+      toast.error("This item is out of stock.");
+      return;
+    }
+
     setIsLoading(true);
     const stored = localStorage.getItem('cartItems');
     // Ensure items are correctly typed
@@ -133,11 +139,12 @@ function ProductDetail() {
       toast.success(`${product.product_name} (${selectedVariant.variant_name || selectedVariant.sku}) removed from cart`);
       setIsInCart(false);
     } else {
-      // Add the specific variant
+      // Add the specific variant - double check that quantity doesn't exceed available stock
+      const requestedQuantity = Math.min(quantity, selectedVariant.quantity);
       const newItem = {
         product_id: product.product_id,
-        sku: selectedVariant.sku, // Add SKU
-        quantity: quantity // Use the current quantity state
+        sku: selectedVariant.sku,
+        quantity: requestedQuantity
       };
       const updated = [...items, newItem];
       localStorage.setItem('cartItems', JSON.stringify(updated));
@@ -145,7 +152,7 @@ function ProductDetail() {
       setIsInCart(true);
     }
     setIsLoading(false);
-  }, [isInCart, product, quantity, selectedVariantIndex, getSelectedVariant]); // Add dependencies
+  }, [isInCart, product, quantity, selectedVariantIndex, getSelectedVariant]);
 
   // Handlers for quantity buttons
   const incrementQuantity = () => {
@@ -157,11 +164,17 @@ function ProductDetail() {
   };
 
   const renderActionButton = () => {
-    if (!product || displayStock === 0) return null;
+    if (!product) return null;
+    
+    // Get stock info from selected variant
+    const selectedVariant = getSelectedVariant();
+    const isOutOfStock = !selectedVariant || selectedVariant.quantity <= 0;
+    
     if (currentUser && currentUser.role === "admin") {
       return <Button className="w-32">View</Button>;
     }
-    // show add/remove to cart for all users (including guests)
+    
+    // Show add/remove to cart for all users (including guests)
     return (
       <div className="flex flex-col gap-4 items-center w-full">
         {/* Variant Selector */}
@@ -183,31 +196,40 @@ function ProductDetail() {
             ))}
           </div>
         )}
-        {/* Quantity Control */}
-        <div className="flex items-center justify-center gap-2">
-           <Button size="icon" variant="outline" onClick={decrementQuantity} disabled={quantity <= 1}>
-             -
-           </Button>
-           <input
-             id="quantity"
-             type="number"
-             min={1}
-             max={displayStock} // Use variant stock
-             value={quantity}
-             onChange={e => setQuantity(Math.max(1, Math.min(displayStock, Number(e.target.value))))}
-             className="w-16 border rounded px-2 py-1 text-center"
-           />
-           <Button size="icon" variant="outline" onClick={incrementQuantity} disabled={quantity >= displayStock}> {/* Use variant stock */}
-             +
-           </Button>
-         </div>
-         <span className="text-xs text-gray-500">/ {displayStock} in stock</span> {/* Use variant stock */}
+        
+        {/* Out of Stock Message */}
+        {isOutOfStock ? (
+          <div className="text-red-500 font-medium mb-2">Out of Stock</div>
+        ) : (
+          <>
+            {/* Quantity Control - only show if in stock */}
+            <div className="flex items-center justify-center gap-2">
+              <Button size="icon" variant="outline" onClick={decrementQuantity} disabled={quantity <= 1}>
+                -
+              </Button>
+              <input
+                id="quantity"
+                type="number"
+                min={1}
+                max={displayStock}
+                value={quantity}
+                onChange={e => setQuantity(Math.max(1, Math.min(displayStock, Number(e.target.value))))}
+                className="w-16 border rounded px-2 py-1 text-center"
+              />
+              <Button size="icon" variant="outline" onClick={incrementQuantity} disabled={quantity >= displayStock}>
+                +
+              </Button>
+            </div>
+            <span className="text-xs text-gray-500">/ {displayStock} in stock</span>
+          </>
+        )}
+        
         {/* Add to Cart Button */}
         <Button
           className="w-48"
           variant={isInCart ? "destructive" : "default"}
           onClick={handleAddToCart}
-          disabled={isLoading || displayStock === 0} // Disable if variant stock is 0
+          disabled={isLoading || isOutOfStock}
         >
           {isInCart ? (
             <>

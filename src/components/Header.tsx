@@ -209,7 +209,7 @@ export default function Header() {
         "mobile-search-input"
       ) as HTMLInputElement;
       const desktopInput = document.querySelector(
-        'input[type="email"]'
+        'input[type="text"]'
       ) as HTMLInputElement;
       const searchValue =
         (mobileInput && mobileInput.value.trim()) ||
@@ -219,7 +219,7 @@ export default function Header() {
           searchValue
         )}`;
       } else {
-        alert("Please enter a product name to search.");
+        alert("Please enter a search term to find products.");
       }
     } catch (error) {
       console.error("Error during product search:", error);
@@ -351,8 +351,8 @@ export default function Header() {
             <div className="flex flex-1 justify-center">
               <div className="flex w-[520px] h-[53px] items-center gap-2">
                 <Input 
-                  type="email" 
-                  placeholder="Search" 
+                  type="text" 
+                  placeholder="Search products by name, category, brand, variant or SKU" 
                   onKeyDown={handleSearchKeyPress}
                 />
                 <Button type="submit" onClick={productSearch}>
@@ -416,8 +416,8 @@ export default function Header() {
             <div className="flex md:hidden items-center px-4 pb-2 gap-2">
               <Input 
                 id="mobile-search-input" 
-                type="email" 
-                placeholder="Search" 
+                type="text" 
+                placeholder="Search products, brands, variants..." 
                 className="flex-1" 
                 onKeyDown={handleSearchKeyPress}
               />
