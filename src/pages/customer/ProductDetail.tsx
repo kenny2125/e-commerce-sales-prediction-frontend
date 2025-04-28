@@ -190,6 +190,18 @@ function ProductDetail() {
                 onClick={() => {
                   setSelectedVariantIndex(idx);
                   setImageError(false); // Reset image error on variant change
+                  
+                  // Immediately check if this variant is in cart
+                  if (product) {
+                    const stored = localStorage.getItem('cartItems');
+                    const items: Array<{ product_id: string; sku: string; quantity: number }> = stored ? JSON.parse(stored) : [];
+                    const exists = items.some(item => item.product_id === product.product_id && item.sku === variant.sku);
+                    setIsInCart(exists);
+                    // Reset quantity to 1 if changing to a variant not in cart
+                    if (!exists) {
+                      setQuantity(1);
+                    }
+                  }
                 }}
                 className="flex-grow min-w-fit"
               >
