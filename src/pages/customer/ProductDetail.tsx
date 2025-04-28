@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { ShoppingCart, Trash2, X } from 'lucide-react';
 import { LogInDialog } from "@/components/dialogs/LogInDialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ interface ProductVariant {
   quantity: number;
   store_price: number;
   image_url: string | null;
+  description?: string; // Add description field to ProductVariant interface
 }
 
 interface Product {
@@ -38,7 +40,7 @@ interface Product {
   quantity: number; // Base product quantity (might be sum of variants or fallback)
   store_price: number; // Base product price (fallback)
   image_url: string; // Base product image (fallback)
-  description?: string;
+  description?: string; // Keep product-level description as fallback
   variants: ProductVariant[]; // Now strongly typed
 }
 
@@ -248,7 +250,34 @@ function ProductDetail() {
   };
 
   if (loading) {
-    return <div className="w-full text-center py-8">Loading product details...</div>;
+    return (
+      <div className="container mx-auto p-4">
+        {/* Desktop Skeleton Layout */}
+        <div className="hidden md:flex flex-row gap-8 items-start py-24 pb-40">
+          {/* Left: Image Skeleton */}
+          <div className="flex-1 flex justify-center items-center">
+            <Skeleton className="aspect-square w-full max-w-[400px] h-[400px] rounded-2xl" />
+          </div>
+          {/* Right: Details Skeleton */}
+          <div className="flex-1 flex flex-col gap-4 justify-center items-center">
+            <Skeleton className="h-12 w-3/4 mb-2" />
+            <Skeleton className="h-8 w-1/4 mb-4" />
+            <Skeleton className="h-6 w-1/2 mb-2" />
+            <Skeleton className="h-24 w-4/5 mb-4" />
+            <Skeleton className="h-10 w-48 mb-2" />
+          </div>
+        </div>
+
+        {/* Mobile Skeleton Layout */}
+        <div className="md:hidden flex flex-col gap-4 py-6">
+          <Skeleton className="aspect-square w-full h-[300px] rounded-2xl mb-4" />
+          <Skeleton className="h-8 w-3/4 mx-auto mb-2" />
+          <Skeleton className="h-6 w-1/3 mx-auto mb-4" />
+          <Skeleton className="h-20 w-5/6 mx-auto mb-4" />
+          <Skeleton className="h-10 w-48 mx-auto" />
+        </div>
+      </div>
+    );
   }
 
   if (error || !product) {
@@ -299,13 +328,15 @@ function ProductDetail() {
           {/* Centered and Smaller Price */}
           <h1 className="text-3xl font-bold text-center">{formattedPrice}</h1>
           <div className="text-lg text-gray-600">Stocks left: <span className="font-semibold">{displayStock}</span></div>
+          
           {/* Display product description if available */}
-          {product.description && (
+          {selectedVariant?.description && (
             <div className="mt-4 mb-2">
               <h3 className="text-lg font-semibold mb-2">Description</h3>
-              <p className="whitespace-pre-line">{product.description}</p>
+              <p className="whitespace-pre-line">{selectedVariant.description}</p>
             </div>
           )}
+          
           <p className="text-xs text-gray-500 italic mb-2">Prices are subject to change without prior notice.</p>
           {/* Render Action Button (already centered internally) */}
           <div className="flex flex-row gap-4 items-center justify-center w-full mt-4">
@@ -341,10 +372,10 @@ function ProductDetail() {
           <h1 className="text-2xl font-bold mb-2 text-center">{formattedPrice}</h1>
           <div className="text-base text-gray-600 mb-2">Stocks left: <span className="font-semibold">{displayStock}</span></div>
           {/* Display product description on mobile layout */}
-          {product.description && (
+          {selectedVariant?.description && (
             <div className="mb-4 px-2">
               <h3 className="text-lg font-semibold mb-2">Description</h3>
-              <p className="whitespace-pre-line text-center">{product.description}</p>
+              <p className="whitespace-pre-line text-center">{selectedVariant.description}</p>
             </div>
           )}
           <p className="text-xs text-gray-500 italic mb-2">Prices are subject to change without prior notice.</p>

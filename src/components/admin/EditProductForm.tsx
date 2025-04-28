@@ -242,38 +242,35 @@ export function EditProductForm({ initialData, onSuccess, isLoading = false }: E
         const previewUrl = URL.createObjectURL(processed);
         setVariantPreviewSrc(previewUrl);
         
-        // Convert to base64 for sending to server
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          // Store base64 data URI in the editingVariant for submission
-          setEditingVariant(prev => prev ? { 
-            ...prev, 
-            image: processed,
-            image_data_uri: reader.result as string // Store base64 data URI
-          } : null);
-        };
-        reader.readAsDataURL(processed);
+        // Store the processed file for later form submission
+        // Don't convert to base64
+        setEditingVariant(prev => prev ? { 
+          ...prev, 
+          image: processed,
+          hasImage: true
+        } : null);
       } else {
         setVariantFileName('');
         setVariantPreviewSrc(editingVariant.image_url || ImagePlaceholder);
-        // Remove image File object if file is deselected
+        
+        // Remove image from editingVariant
         setEditingVariant(prev => prev ? { 
           ...prev, 
           image: undefined,
-          image_data_uri: undefined
+          image_data_uri: undefined,
+          hasImage: false
         } : null);
       }
     } catch (error) {
         console.error("Error processing variant image:", error);
-        // Optionally show an error message to the user, e.g., using a state variable
-        setVariantFormError("Failed to process image. Please try another file."); // Example error feedback
-        // Reset image state on error
+        setVariantFormError("Failed to process image. Please try another file.");
         setVariantFileName('');
         setVariantPreviewSrc(editingVariant.image_url || ImagePlaceholder);
         setEditingVariant(prev => prev ? { 
           ...prev, 
           image: undefined,
-          image_data_uri: undefined
+          image_data_uri: undefined,
+          hasImage: false
         } : null);
     }
   };
@@ -424,12 +421,14 @@ export function EditProductForm({ initialData, onSuccess, isLoading = false }: E
       
       console.log("Preparing variants for submission...");
       
-      // Format variants for submission - preserve image_data_uri if present
-      const formattedVariants = variants.map(v => {
-        // Get the variant with potential image_data_uri (may be stored in a different property)
-        const variantWithImage = v as any;
-        
-        return {
+      // Create FormData for file uploads - match AddProductForm approach
+      const formData = new FormData();
+      
+      // Add basic product data
+      formData.append('productData', JSON.stringify({
+        ...payload,
+        // Don't include variant images in the JSON payload
+        variants: variants.map(v => ({
           id: v.id,
           sku: v.sku,
           variant_name: v.variant_name,
@@ -438,24 +437,25 @@ export function EditProductForm({ initialData, onSuccess, isLoading = false }: E
             ? parseFloat(String(v.store_price).replace(/,/g, '')) 
             : v.store_price,
           quantity: v.quantity,
-          image_url: v.image_url,
-          image_data_uri: variantWithImage.image_data_uri // Include base64 image data if available
-        };
+          image_url: v.image_url
+        }))
+      }));
+
+      // Add variant images as separate files
+      variants.forEach((variant, index) => {
+        if (variant.image instanceof File) {
+          formData.append(`variantImage_${index}`, variant.image);
+        }
       });
       
-      const body = JSON.stringify({
-        ...payload,
-        variants: formattedVariants
-      });
-      
-      console.log("Submitting update with variants:", formattedVariants.length);
+      console.log("Submitting update with variants:", variants.length);
       const response = await fetch(endpoint, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
+          // Don't set Content-Type for FormData
         },
-        body
+        body: formData
       });
 
       if (!response.ok) {

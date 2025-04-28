@@ -10,8 +10,10 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { Search as SearchIcon } from "lucide-react";
+import { Search as SearchIcon, LayoutGrid, List } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Product {
   product_id: string;
@@ -37,6 +39,10 @@ export default function Search() {
   const [activeTab, setActiveTab] = useState<"filters" | "results">("results");
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [searchInput, setSearchInput] = useState(searchParams.get("query") || "");
+
+  // Add viewMode state for toggling between card and table views
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [productsWithVariants, setProductsWithVariants] = useState<any[]>([]);
 
   const handlePriceChange = useCallback((value: number) => {
     setPriceRange([value]);
@@ -265,6 +271,34 @@ export default function Search() {
     </Card>
   );
 
+  useEffect(() => {
+    // Fetch products with variants when switching to table view
+    if (viewMode === 'table') {
+      setLoading(true);
+      const fetchProductsWithVariants = async () => {
+        try {
+          const query = searchParams.get("query");
+          let url = `${import.meta.env.VITE_API_URL}/api/product/detail`;
+          
+          if (query) {
+            url += `?query=${encodeURIComponent(query)}`;
+          }
+          
+          const response = await fetch(url);
+          if (!response.ok) throw new Error('Failed to fetch products with variants');
+          const data = await response.json();
+          setProductsWithVariants(data);
+          setLoading(false);
+        } catch (error) {
+          console.error('Error fetching products with variants:', error);
+          setLoading(false);
+        }
+      };
+      
+      fetchProductsWithVariants();
+    }
+  }, [viewMode, searchParams]);
+
   return (
     <>
       {/* Desktop View */}
@@ -276,83 +310,23 @@ export default function Search() {
               <h1>
                 Results for: <span className="font-bold">{searchParams.get("query") || "All Products"}</span>
               </h1>
-              {isAdmin && (
-                <form onSubmit={handleSearch} className="flex max-w-sm">
-                  <div className="relative w-full">
-                    <Input
-                      type="text"
-                      placeholder="Search products..."
-                      value={searchInput}
-                      onChange={(e) => setSearchInput(e.target.value)}
-                      className="pr-10"
-                    />
-                    <Button 
-                      type="submit" 
-                      variant="ghost" 
-                      size="icon" 
-                      className="absolute right-0 top-0 h-full"
-                    >
-                      <SearchIcon className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </form>
-              )}
-            </div>
-            {loading ? (
-              <div className="flex justify-center items-center min-h-[200px]">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : (
-              <div className="mt-4">
-                {paginatedProducts.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-lg text-gray-500">No products found matching your criteria</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5 gap-3 sm:gap-4">
-                      {paginatedProducts.map((product) => (
-                        <ProductCard key={product.product_id} product={product} />
-                      ))}
-                    </div>
-                    <Pagination />
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile View with Tabs */}
-      <div className="md:hidden">
-        <div className="flex justify-around border-b">
-          <button 
-            onClick={() => setActiveTab("filters")} 
-            className={`px-4 py-2 ${activeTab==="filters" ? "text-indigo-500 border-b-2 border-indigo-500" : ""}`}
-          >
-            Filters
-          </button>
-          <button 
-            onClick={() => setActiveTab("results")} 
-            className={`px-4 py-2 ${activeTab==="results" ? "text-indigo-500 border-b-2 border-indigo-500" : ""}`}
-          >
-            Results
-          </button>
-        </div>
-        <div className="p-4">
-          {activeTab === "filters" ? (
-            <div className="flex justify-center">
-              <FilterCard />
-            </div>
-          ) : (
-            <>
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                <h1>
-                  Results for: <span className="font-bold">{searchParams.get("query") || "All Products"}</span>
-                </h1>
+              <div className="flex items-center gap-4">
+                {/* View Toggle */}
+                <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'card' | 'table')} className="mb-0">
+                  <TabsList>
+                    <TabsTrigger value="card">
+                      <LayoutGrid className="h-4 w-4 mr-2" />
+                      Cards
+                    </TabsTrigger>
+                    <TabsTrigger value="table">
+                      <List className="h-4 w-4 mr-2" />
+                      Table
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                
                 {isAdmin && (
-                  <form onSubmit={handleSearch} className="flex w-full sm:w-auto mt-2 sm:mt-0">
+                  <form onSubmit={handleSearch} className="flex max-w-sm">
                     <div className="relative w-full">
                       <Input
                         type="text"
@@ -373,29 +347,143 @@ export default function Search() {
                   </form>
                 )}
               </div>
-              {loading ? (
-                <div className="flex justify-center items-center min-h-[200px]">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
-                    {paginatedProducts.length === 0 ? (
-                      <div className="text-center py-8 col-span-full">
-                        <p className="text-lg text-gray-500">No products found matching your criteria</p>
+            </div>
+            {loading ? (
+              <div className="flex justify-center items-center min-h-[200px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <div className="mt-4">
+                {paginatedProducts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-lg text-gray-500">No products found matching your criteria</p>
+                  </div>
+                ) : (
+                  <>
+                    {viewMode === 'card' ? (
+                      // Card View
+                      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5 gap-3 sm:gap-4">
+                        {paginatedProducts.map((product) => (
+                          <ProductCard key={product.product_id} product={product} />
+                        ))}
                       </div>
                     ) : (
-                      paginatedProducts.map((product) => (
-                        <ProductCard key={product.product_id} product={product} />
-                      ))
+                      // Table View - Simplified without variant and stock columns
+                      <div className="rounded-md border">
+                        <table className="w-full caption-bottom text-sm">
+                          <thead className="[&_tr]:border-b">
+                            <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                              <th className="h-12 px-4 text-left align-middle font-medium">Product Name</th>
+                              <th className="h-12 px-4 text-left align-middle font-medium">Category</th>
+                              <th className="h-12 px-4 text-left align-middle font-medium">Brand</th>
+                              <th className="h-12 px-4 text-left align-middle font-medium">Price</th>
+                              <th className="h-12 px-4 text-left align-middle font-medium">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="[&_tr:last-child]:border-0">
+                            {paginatedProducts.map((product) => (
+                              <tr 
+                                key={product.product_id} 
+                                className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                              >
+                                <td className="p-4 align-middle font-medium">{product.product_name}</td>
+                                <td className="p-4 align-middle">{product.category}</td>
+                                <td className="p-4 align-middle">{product.brand}</td>
+                                <td className="p-4 align-middle">₱{product.store_price.toLocaleString()}</td>
+                                <td className="p-4 align-middle">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => navigate(`/product?id=${product.product_id}`)}
+                                  >
+                                    View More
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     )}
-                  </div>
-                  <Pagination />
-                </>
-              )}
-            </>
-          )}
+                    <Pagination />
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
+      </div>
+
+      {/* Mobile View with Tabs */}
+      <div className="md:hidden">
+        <Tabs defaultValue="results" className="w-full">
+          <TabsList>
+            <TabsTrigger value="filters" onClick={() => setActiveTab("filters")}>
+              <LayoutGrid className="mr-2 h-4 w-4" />
+              Filters
+            </TabsTrigger>
+            <TabsTrigger value="results" onClick={() => setActiveTab("results")}>
+              <List className="mr-2 h-4 w-4" />
+              Results
+            </TabsTrigger>
+          </TabsList>
+          <div className="p-4">
+            {activeTab === "filters" ? (
+              <div className="flex justify-center">
+                <FilterCard />
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                  <h1>
+                    Results for: <span className="font-bold">{searchParams.get("query") || "All Products"}</span>
+                  </h1>
+                  {isAdmin && (
+                    <form onSubmit={handleSearch} className="flex w-full sm:w-auto mt-2 sm:mt-0">
+                      <div className="relative w-full">
+                        <Input
+                          type="text"
+                          placeholder="Search products..."
+                          value={searchInput}
+                          onChange={(e) => setSearchInput(e.target.value)}
+                          className="pr-10"
+                        />
+                        <Button 
+                          type="submit" 
+                          variant="ghost" 
+                          size="icon" 
+                          className="absolute right-0 top-0 h-full"
+                        >
+                          <SearchIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+                {loading ? (
+                  <div className="flex justify-center items-center min-h-[200px]">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
+                      {paginatedProducts.length === 0 ? (
+                        <div className="text-center py-8 col-span-full">
+                          <p className="text-lg text-gray-500">No products found matching your criteria</p>
+                        </div>
+                      ) : (
+                        paginatedProducts.map((product) => (
+                          <ProductCard key={product.product_id} product={product} />
+                        ))
+                      )}
+                    </div>
+                    <Pagination />
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </Tabs>
       </div>
     </>
   );

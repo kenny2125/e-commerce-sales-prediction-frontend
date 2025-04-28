@@ -67,8 +67,8 @@ const Checkout = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState<string>("cash");
-  const [pickupMethod, setPickupMethod] = useState<string>("store");
+  const [paymentMethod, setPaymentMethod] = useState<string>("cod");
+  const [pickupMethod, setPickupMethod] = useState<string>("delivery");
   const [purpose, setPurpose] = useState<string>("");
   const [orderNumber, setOrderNumber] = useState<string>("");
   const [isGuestCheckout, setIsGuestCheckout] = useState(false);
@@ -315,18 +315,7 @@ const Checkout = () => {
         <Card className="lg:col-span-4 border shadow-sm">
           <CardContent className="p-6">
             <h2 className="text-xl font-bold mb-4">Customer Information</h2>
-            
-            {isGuestCheckout && (
-              <div className="w-full bg-muted p-4 rounded-md flex items-start gap-3 mb-4">
-                <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-medium">Checkout as Guest</p>
-                  <p className="text-muted-foreground">
-                    You're checking out as a guest. Your order information will be stored with the details you provide.
-                  </p>
-                </div>
-              </div>
-            )}
+  
             
             {/* Customer details form for guest checkout */}
             {isGuestCheckout && (
@@ -414,24 +403,23 @@ const Checkout = () => {
               <div className="grid gap-3">
                 <div className="grid gap-2">
                   <Label>Payment Method</Label>
-                  <Select onValueChange={setPaymentMethod} value={paymentMethod} defaultValue="cash">
+                  <Select onValueChange={setPaymentMethod} value={paymentMethod} defaultValue="cod">
                     <SelectTrigger>
                       <SelectValue placeholder="Select a Payment Method" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="cod">Cash on Delivery</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 
                 <div className="grid gap-2">
                   <Label>Pickup Method</Label>
-                  <Select onValueChange={setPickupMethod} value={pickupMethod}>
+                  <Select onValueChange={setPickupMethod} value={pickupMethod} defaultValue="delivery">
                     <SelectTrigger>
                       <SelectValue placeholder="Select a Pickup Method" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="store">Store Pickup</SelectItem>
                       <SelectItem value="delivery">Delivery</SelectItem>
                     </SelectContent>
                   </Select>

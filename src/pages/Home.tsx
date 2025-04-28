@@ -119,7 +119,7 @@ function Home() {
             <img
               src={furnitureBanner}
               alt="Furniture"
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
             />
             <div className="absolute inset-0 bg-black/40 flex items-center p-8 transition-all duration-300 group-hover:bg-black/50">
               <div className="transform transition-transform duration-300 group-hover:translate-x-2">
@@ -136,7 +136,7 @@ function Home() {
             <img
               src={technologyBanner}
               alt="Technology"
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
             />
             <div className="absolute inset-0 bg-black/40 flex items-center p-8 transition-all duration-300 group-hover:bg-black/50">
               <div className="transform transition-transform duration-300 group-hover:translate-x-2">
@@ -151,7 +151,7 @@ function Home() {
       </section>
 
       {/* Who Are We Section */}
-      <section className="container mx-auto px-4 mb-16 py-8 bg-muted/30 rounded-lg">
+      {/* <section className="container mx-auto px-4 mb-16 py-8 bg-muted/30 rounded-lg">
         <div className="flex flex-col md:flex-row gap-8">
           <div className="flex-1">
             <h2 className="text-3xl font-bold mb-4">Who Are We?</h2>
@@ -193,7 +193,7 @@ function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* New & Featured Products Section */}
       <section className="container mx-auto px-4 mb-16">
