@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { UserPen, Eye, EyeOff } from "lucide-react";
+import { UserPen } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,9 +11,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useUser } from "@/contexts/UserContext";
+import { LogInDialog } from "./LogInDialog";
 
 type UserRole = "guest" | "customer" | "admin";
 
@@ -29,51 +31,13 @@ interface User {
 }
 
 export function ProfileDialog() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Fetch user profile from backend
-  const fetchUserProfile = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      // Get token from localStorage
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        setError("You are not logged in");
-        return;
-      }
-      
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/profile`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch profile');
-      }
-      
-      const data = await response.json();
-      setCurrentUser(data);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      setError("Failed to load profile data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUserProfile();
-  }, []);
+  const { currentUser, isInitialized, logout } = useUser();
+  const [showError, setShowError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleLogout = () => {
-    window.location.href = '/';
-    localStorage.removeItem('token');
-    setCurrentUser(null);
+    logout();
+    navigate('');
   };
 
   // Function to render role-specific capabilities
@@ -147,14 +111,14 @@ export function ProfileDialog() {
         </DialogHeader>
 
         {/* Error messages */}
-        {error && (
+        {showError && (
           <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-            <span className="block sm:inline">{error}</span>
+            <span className="block sm:inline">{showError}</span>
           </div>
         )}
         
         {/* User Information */}
-        {loading ? (
+        {!isInitialized ? (
           <div className="space-y-4 py-4">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
@@ -208,16 +172,14 @@ export function ProfileDialog() {
         
         <DialogFooter>
           <div className="flex gap-2">
-            {loading ? (
+            {!isInitialized ? (
               <Skeleton className="h-10 w-24" />
             ) : currentUser ? (
               <Button type="button" variant="outline" onClick={handleLogout}>
                 Logout
               </Button>
             ) : (
-              <Button type="button" onClick={() => window.location.href = '/login'}>
-                Login
-              </Button>
+              <LogInDialog />
             )}
           </div>
         </DialogFooter>

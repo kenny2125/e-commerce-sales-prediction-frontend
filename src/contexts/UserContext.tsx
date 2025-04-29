@@ -58,44 +58,25 @@ export function UserProvider({ children }: UserProviderProps) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isInitialized, setIsInitialized] = useState<boolean>(false); // Add initialization state
   const [error, setError] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
 
-  // Utility to validate JWT expiration
-  const isTokenValid = (token: string): boolean => {
-    try {
-      const { exp } = JSON.parse(atob(token.split('.')[1]));
-      return exp * 1000 > Date.now();
-    } catch {
-      return false;
-    }
-  };
-
-  // Check for saved auth on mount
+  // Initialize by fetching current user via httpOnly cookie
   useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    let logoutTimer: number;
-
-    if (savedToken && savedUser) {
-      if (!isTokenValid(savedToken)) {
-        logout();
-      } else {
-        setToken(savedToken);
-        setCurrentUser(JSON.parse(savedUser));
+    fetch(`${API_URL}/auth/profile`, {
+      credentials: 'include'
+    })
+      .then(res => {
+        if (res.ok) return res.json();
+        throw new Error('Not authenticated');
+      })
+      .then(user => {
+        setCurrentUser(user);
         setIsLoggedIn(true);
-        const { exp } = JSON.parse(atob(savedToken.split('.')[1]));
-        const timeout = exp * 1000 - Date.now();
-        logoutTimer = window.setTimeout(() => logout(), timeout);
-      }
-    }
-
-    setIsInitialized(true); // Mark as initialized
-
-    return () => {
-      if (logoutTimer) {
-        clearTimeout(logoutTimer);
-      }
-    };
+      })
+      .catch(() => {
+        setCurrentUser(null);
+        setIsLoggedIn(false);
+      })
+      .finally(() => setIsInitialized(true));
   }, []);
 
   // Login function
@@ -105,12 +86,13 @@ export function UserProvider({ children }: UserProviderProps) {
       setError(null);
       
       const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ credential, password }),
-      });
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+         },
+         credentials: 'include',
+         body: JSON.stringify({ credential, password }),
+       });
       
       const data = await response.json();
       
@@ -118,15 +100,8 @@ export function UserProvider({ children }: UserProviderProps) {
         throw new Error(data.message || 'Login failed');
       }
       
-      // Save auth data
-      setToken(data.token);
       setCurrentUser(data.user);
       setIsLoggedIn(true);
-      
-      // Store in localStorage
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
@@ -141,12 +116,13 @@ export function UserProvider({ children }: UserProviderProps) {
       setError(null);
       
       const response = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+         },
+         credentials: 'include',
+         body: JSON.stringify(userData),
+       });
       
       const data = await response.json();
       
@@ -154,15 +130,8 @@ export function UserProvider({ children }: UserProviderProps) {
         throw new Error(data.message || 'Registration failed');
       }
       
-      // Save auth data
-      setToken(data.token);
       setCurrentUser(data.user);
       setIsLoggedIn(true);
-      
-      // Store in localStorage
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
@@ -171,12 +140,10 @@ export function UserProvider({ children }: UserProviderProps) {
   };
 
   // Logout function
-  const logout = () => {
+  const logout = async () => {
+    await fetch(`${API_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
     setCurrentUser(null);
     setIsLoggedIn(false);
-    setToken(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
   };
 
   // Clear error
@@ -186,15 +153,7 @@ export function UserProvider({ children }: UserProviderProps) {
 
   // Authorization-aware fetch wrapper
   const authFetch = async (input: RequestInfo, init: RequestInit = {}): Promise<Response> => {
-    if (!token || !isTokenValid(token)) {
-      logout();
-      return Promise.reject(new Error('Authentication token is missing or expired'));
-    }
-    const headers = {
-      ...init.headers,
-      Authorization: `Bearer ${token}`,
-    };
-    return fetch(input, { ...init, headers });
+    return fetch(input, { ...init, credentials: 'include' });
   };
 
   return (

@@ -55,7 +55,7 @@ const PrivacyPolicy: React.FC = () => {
           <Shield className="w-6 h-6 text-pink-500 mt-1" />
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Children's Privacy</h2>
-            <p className="text-gray-600 dark:text-gray-300 text-sm">We do not knowingly collect data from children under 13. If you have concerns, contact us at <span className="text-primary">redpccomputer@gmail.com</span>.</p>
+            <p className="text-gray-600 dark:text-gray-300 text-sm">We do not knowingly collect data from children under 13. If you have concerns, contact us at <span className="text-primary">acctg.sky@gmail.com</span>.</p>
           </div>
         </div>
       </div>

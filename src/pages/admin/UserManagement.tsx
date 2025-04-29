@@ -101,17 +101,9 @@ export function UserManagement() {
   React.useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const token = localStorage.getItem('token')
-        if (!token) {
-          throw new Error('No authentication token found')
-        }
-
         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/users`, {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+          credentials: 'include'
         })
 
         if (!response.ok) {
@@ -198,23 +190,13 @@ export function UserManagement() {
           }
 
           try {
-            const token = localStorage.getItem('token')
-            if (!token) {
-              throw new Error('No authentication token found')
-            }
-
             const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/users/role`, {
               method: 'PUT',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ 
-                userId: user.id,
-                role: newRole
-              })
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: user.id, role: newRole })
             })
-            
+
             if (!response.ok) {
               throw new Error('Failed to update role')
             }
@@ -233,17 +215,9 @@ export function UserManagement() {
 
         const handleDelete = async () => {
           try {
-            const token = localStorage.getItem('token')
-            if (!token) {
-              throw new Error('No authentication token found')
-            }
-
             const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/users/${user.id}`, {
               method: 'DELETE',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              }
+              credentials: 'include'
             })
             
             if (!response.ok) {
@@ -522,18 +496,11 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
   async function onSubmit(values: FormSchema) {
     try {
       setIsSubmitting(true)
-      const token = localStorage.getItem('token')
-      if (!token) {
-        throw new Error('No authentication token found')
-      }
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/users`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(values),
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values)
       })
 
       if (!response.ok) {

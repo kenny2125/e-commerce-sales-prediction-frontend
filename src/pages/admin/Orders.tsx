@@ -138,17 +138,9 @@ export function Orders() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        throw new Error('No authentication token found')
-      }
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        credentials: 'include'
       })
 
       if (!response.ok) {
@@ -179,10 +171,8 @@ export function Orders() {
   // Fetch analytics stats
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('token')
-      if (!token) throw new Error('No authentication token')
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/stats`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        credentials: 'include'
       })
       if (!res.ok) throw new Error('Failed to fetch stats')
       const data = await res.json()
@@ -203,10 +193,8 @@ export function Orders() {
   const handleOpenDetail = async (orderID: string) => {
     setDetailLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No authentication token');
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${orderID}`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to fetch order details');
       const data: OrderDetail = await res.json();

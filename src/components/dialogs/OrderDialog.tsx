@@ -55,11 +55,6 @@ export function OrderDialog() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setOrders([]);
-        return;
-      }
       if (!currentUser?.id) {
         setOrders([]);
         return;
@@ -71,10 +66,7 @@ export function OrderDialog() {
 
       const response = await fetch(endpoint, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -108,20 +100,12 @@ export function OrderDialog() {
 
   const handleCancelOrder = async (orderId: string) => {
     setCancellingOrderId(orderId);
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast.error("Authentication required to cancel order.");
-      setCancellingOrderId(null);
-      return;
-    }
+    // Use cookie authentication
 
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${orderId}/cancel`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include'
       });
 
       const responseData = await response.json();

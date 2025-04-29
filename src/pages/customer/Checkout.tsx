@@ -222,29 +222,23 @@ const Checkout = () => {
         });
       } else {
         // Regular checkout for logged-in users
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('No authentication token found');
-        }
 
-        // Create order through the API using the checkout endpoint
-        const orderData = {
-          payment_method: paymentMethod,
-          pickup_method: pickupMethod,
-          purpose, 
-          items: cartItems.map(item => ({
-            product_id: item.product_id,
-            sku: item.sku || '',
-            quantity: item.quantity
-          }))
-        };
+         // Create order through the API using the checkout endpoint
+         const orderData = {
+           payment_method: paymentMethod,
+           pickup_method: pickupMethod,
+           purpose, 
+           items: cartItems.map(item => ({
+             product_id: item.product_id,
+             sku: item.sku || '',
+             quantity: item.quantity
+           }))
+         };
 
         response = await fetch(`${import.meta.env.VITE_API_URL}/api/checkout`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(orderData)
         });
       }

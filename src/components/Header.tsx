@@ -32,7 +32,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import * as React from "react";
 
 export default function Header() {
-  const { currentUser, isLoggedIn } = useUser();
+  const { currentUser, isLoggedIn, isInitialized } = useUser();
   const navigate = useNavigate();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -41,7 +41,7 @@ export default function Header() {
 
   // Redirect users to their default page based on role
   useEffect(() => {
-    if (currentUser && window.location.pathname === '/') {
+    if (isInitialized && currentUser && window.location.pathname === '/') {
       switch (currentUser.role) {
         case 'admin':
           navigate('/dashboard');
@@ -57,7 +57,7 @@ export default function Header() {
           break;
       }
     }
-  }, [currentUser, navigate]);
+  }, [isInitialized, currentUser, navigate]);
 
   useEffect(() => {
     const fetchCategories = async () => {
