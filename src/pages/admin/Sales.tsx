@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { LineChartInteractive } from "@/components/charts/LineChartInterative";
-import { PhilippinePeso, TableIcon, BarChart, LineChart, ShoppingCart, TrendingUp, Users, Calendar } from "lucide-react";
+import { PhilippinePeso, TableIcon, BarChart, LineChart, ShoppingCart, TrendingUp, Users, Calendar, Repeat } from "lucide-react";
 import { TopCategories } from "@/components/charts/TopCategories";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustomerAcquisition } from "@/components/charts/CustomerAcquisition";
@@ -23,7 +23,7 @@ interface KpiData {
   totalRevenue: number;
   totalOrders: number;
   averageOrderValue: number;
-  newCustomers: number;
+  averageOrdersPerDay: number;
 }
 
 // Placeholder KPI Card Component (can be moved to a separate file later)
@@ -101,6 +101,11 @@ export default function Sales() {
     }).format(value);
   };
 
+  // Helper function to format number to one decimal place
+  const formatDecimal = (value: number) => {
+    return value.toFixed(1);
+  };
+
   return (
     <>
       {/* Header section */}
@@ -168,9 +173,9 @@ export default function Sales() {
                 icon={TrendingUp}
               />
               <KpiCard
-                title="New Customers (30d)"
-                value={kpiData.newCustomers.toString()}
-                icon={Users}
+                title="Avg. Orders / Day"
+                value={formatDecimal(kpiData.averageOrdersPerDay)}
+                icon={Calendar}
               />
             </div>
           ) : (
