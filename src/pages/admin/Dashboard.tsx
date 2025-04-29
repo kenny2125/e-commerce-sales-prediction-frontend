@@ -31,7 +31,9 @@ interface RecentSale {
 
 interface StockLevel {
   product_id: string;
+  variant_id: string;
   product_name: string;
+  variant_name: string;
   quantity: number;
   status?: string; 
 }
@@ -337,16 +339,17 @@ export default function Dashboard() {
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium truncate flex-1">
                           {item.product_name}
+                          {item.variant_name && (
+                            <span className="text-xs text-muted-foreground block">
+                              {item.variant_name}
+                            </span>
+                          )}
                         </span>
                         <span className="text-sm font-medium">
                           {item.sold_count}
                         </span>
                       </div>
-                      {item.product_original_name && (
-                        <span className="text-xs text-muted-foreground">
-                          {item.product_original_name}
-                        </span>
-                      )}
+
                     </div>
                   ))}
                 </div>
@@ -393,6 +396,9 @@ export default function Dashboard() {
                       <div key={item.product_id} className="flex items-center justify-between pb-2 border-b">
                         <div className="space-y-1">
                           <p className="text-sm font-medium truncate">{item.product_name}</p>
+                          {item.variant_name && (
+                            <p className="text-xs text-muted-foreground truncate">{item.variant_name}</p>
+                          )}
                           <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
                         </div>
                         <span className={`text-xs px-2 py-1 rounded-full ${
