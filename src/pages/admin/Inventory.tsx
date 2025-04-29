@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 import type { Inventory } from "@/components/admin/InventoryColumns";
 import { getColumns } from "@/components/admin/InventoryColumns";
@@ -49,6 +50,20 @@ type InventoryStats = {
   lowStockItems: number;
   outOfStockItems: number;
   totalInventoryValue: number;
+  stockDetails?: {
+    lowStock: Array<{
+      id: number;
+      product_name: string;
+      variant_name: string;
+      quantity: number;
+    }>,
+    outOfStock: Array<{
+      id: number;
+      product_name: string;
+      variant_name: string;
+      quantity: number;
+    }>,
+  };
 };
 
 export function Inventory() {
@@ -120,19 +135,28 @@ export function Inventory() {
     setStatsError(null);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/product/stats`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const [statsResponse, stockDetailsResponse] = await Promise.all([
+        fetch(`${import.meta.env.VITE_API_URL}/api/product/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${import.meta.env.VITE_API_URL}/api/product/stock-details`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      ]);
+
+      if (!statsResponse.ok || !stockDetailsResponse.ok) {
+        throw new Error(`HTTP error! status: ${statsResponse.status}`);
       }
-      const result: InventoryStats = await response.json();
-      setStats(result);
+
+      const [statsData, stockDetails] = await Promise.all([
+        statsResponse.json(),
+        stockDetailsResponse.json()
+      ]);
+
+      setStats({
+        ...statsData,
+        stockDetails
+      });
     } catch (error: any) {
       console.error("Failed to fetch inventory stats:", error);
       setStatsError(`Failed to load summary: ${error.message}.`);
@@ -303,29 +327,59 @@ export function Inventory() {
           </>
         ) : (
           <>
-            <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
-              <p className="text-sm text-muted-foreground">Total Products</p>
-              <p className="text-2xl font-bold">
-                {stats?.totalProducts ?? "N/A"}
-              </p>
+            <div className="border rounded-lg p-4 flex flex-row justify-between h-32 bg-card text-card-foreground">
+              <div className="flex flex-col">
+                <p className="text-sm text-muted-foreground">Total Products</p>
+                <p className="text-2xl font-bold">
+                  {stats?.totalProducts ?? "N/A"}
+                </p>
+              </div>
             </div>
-            <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
-              <p className="text-sm text-muted-foreground">Low Stock Items</p>
-              <p className="text-2xl font-bold">
-                {stats?.lowStockItems ?? "N/A"}
-              </p>
+            <div className="border rounded-lg p-4 flex flex-row justify-between h-32 bg-card text-card-foreground">
+              <div className="flex flex-col">
+                <p className="text-sm text-muted-foreground">Low Stock Items</p>
+                <p className="text-2xl font-bold">
+                  {stats?.lowStockItems ?? "N/A"}
+                </p>
+              </div>
+              <div className="w-[60%] border-l pl-4">
+                <ScrollArea className="h-24 w-full">
+                  <div className="text-sm text-muted-foreground pr-4">
+                    {stats?.stockDetails?.lowStock.map((item) => (
+                      <div key={`${item.id}-${item.variant_name}`} className="text-xs mb-1">
+                        {item.product_name} ({item.variant_name}) - {item.quantity} left
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
             </div>
-            <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
-              <p className="text-sm text-muted-foreground">Out of Stock Items</p>
-              <p className="text-2xl font-bold">
-                {stats?.outOfStockItems ?? "N/A"}
-              </p>
+            <div className="border rounded-lg p-4 flex flex-row justify-between h-32 bg-card text-card-foreground">
+              <div className="flex flex-col">
+                <p className="text-sm text-muted-foreground">Out of Stock Items</p>
+                <p className="text-2xl font-bold">
+                  {stats?.outOfStockItems ?? "N/A"}
+                </p>
+              </div>
+              <div className="w-[60%] border-l pl-4">
+                <ScrollArea className="h-24 w-full">
+                  <div className="text-sm text-muted-foreground pr-4">
+                    {stats?.stockDetails?.outOfStock.map((item) => (
+                      <div key={`${item.id}-${item.variant_name}`} className="text-xs mb-1">
+                        {item.product_name} ({item.variant_name})
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
             </div>
-            <div className="border rounded-lg p-4 flex flex-col items-center justify-center h-32 bg-card text-card-foreground">
-              <p className="text-sm text-muted-foreground">Inventory Value</p>
-              <p className="text-2xl font-bold">
-                {formatCurrency(stats?.totalInventoryValue)}
-              </p>
+            <div className="border rounded-lg p-4 flex flex-row justify-between h-32 bg-card text-card-foreground">
+              <div className="flex flex-col">
+                <p className="text-sm text-muted-foreground">Inventory Value</p>
+                <p className="text-2xl font-bold">
+                  {formatCurrency(stats?.totalInventoryValue)}
+                </p>
+              </div>
             </div>
           </>
         )}
