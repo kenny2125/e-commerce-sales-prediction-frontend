@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label";
 export interface OrderItem {
   product_id: string;
   product_name: string;
+  variant_name?: string;
   quantity: number;
   price_at_time: number;
 }
@@ -384,7 +385,10 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
           <tbody>
             ${order.items.map(item => `
               <tr>
-                <td>${item.product_name}</td>
+                <td>
+                  ${item.product_name}
+                  ${item.variant_name ? `<br><span style="font-size: 0.9em; color: #666;">${item.variant_name}</span>` : ''}
+                </td>
                 <td class="text-right">${item.quantity}</td>
                 <td class="text-right">${formatCurrency(item.price_at_time)}</td>
                 <td class="text-right">${formatCurrency(item.quantity * item.price_at_time)}</td>
@@ -581,7 +585,14 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
                       const lineTotal = item.quantity * item.price_at_time;
                       return (
                         <TableRow key={item.product_id}>
-                          <TableCell className="font-medium">{item.product_name}</TableCell>
+                          <TableCell className="font-medium">
+                            {item.product_name}
+                            {item.variant_name && (
+                              <span className="block text-sm text-muted-foreground">
+                                {item.variant_name}
+                              </span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-right">{item.quantity}</TableCell>
                           <TableCell className="text-right">{formatCurrency(item.price_at_time)}</TableCell>
                           <TableCell className="text-right">{formatCurrency(lineTotal)}</TableCell>
