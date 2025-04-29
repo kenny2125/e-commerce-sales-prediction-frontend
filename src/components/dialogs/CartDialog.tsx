@@ -24,6 +24,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { QuantityInput } from "@/components/ui/quantity-input";
 import { useUser } from "@/contexts/UserContext";
 import { LogInDialog } from "@/components/dialogs/LogInDialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Use API to fetch up‑to‑date product info
 const API_URL = import.meta.env.VITE_API_URL;
@@ -56,8 +57,8 @@ export function CartDialog() {
       setIsMobile(window.innerWidth < 768);
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Fetch cart items when dialog opens
@@ -70,9 +71,13 @@ export function CartDialog() {
   const fetchCartItems = async () => {
     setLoading(true);
     // Read stored product IDs, SKUs, and quantities
-    const stored = localStorage.getItem('cartItems');
+    const stored = localStorage.getItem("cartItems");
     // Expecting format: { product_id: string, sku: string, quantity: number }[]
-    const localItems: Array<{ product_id: string; sku: string; quantity: number }> = stored ? JSON.parse(stored) : [];
+    const localItems: Array<{
+      product_id: string;
+      sku: string;
+      quantity: number;
+    }> = stored ? JSON.parse(stored) : [];
 
     if (localItems.length === 0) {
       setCartItems([]);
@@ -83,36 +88,49 @@ export function CartDialog() {
     // Fetch up-to-date product variant details
     try {
       const response = await fetch(`${API_URL}/api/cart/variant-details`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: localItems.map(i => ({ product_id: i.product_id, sku: i.sku })) })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: localItems.map((i) => ({
+            product_id: i.product_id,
+            sku: i.sku,
+          })),
+        }),
       });
 
-      if (!response.ok) throw new Error('Failed to fetch product variant details');
+      if (!response.ok)
+        throw new Error("Failed to fetch product variant details");
 
       // Get variant details with stock information
-      const details: Array<Omit<CartItem, 'quantity'>> = await response.json();
-      console.log('Fetched variant details:', details); // Log for debugging
+      const details: Array<Omit<CartItem, "quantity">> = await response.json();
+      console.log("Fetched variant details:", details); // Log for debugging
 
       // Merge stored quantities with fetched details
-      const merged: CartItem[] = details.map(d => {
-        const local = localItems.find(i => i.product_id === d.product_id && i.sku === d.sku);
-        // Clamp quantity based on fetched stock, ensure local item exists
-        const quantity = local ? Math.min(local.quantity, d.stock) : 0;
-        return { ...d, quantity };
-      }).filter(item => item.quantity > 0 && item.stock > 0); // Filter out items that are unavailable or have no stock
+      const merged: CartItem[] = details
+        .map((d) => {
+          const local = localItems.find(
+            (i) => i.product_id === d.product_id && i.sku === d.sku
+          );
+          // Clamp quantity based on fetched stock, ensure local item exists
+          const quantity = local ? Math.min(local.quantity, d.stock) : 0;
+          return { ...d, quantity };
+        })
+        .filter((item) => item.quantity > 0 && item.stock > 0); // Filter out items that are unavailable or have no stock
 
       setCartItems(merged);
 
       // Update localStorage with potentially clamped quantities
-      const updatedLocalItems = merged.map(item => ({ product_id: item.product_id, sku: item.sku, quantity: item.quantity }));
-      localStorage.setItem('cartItems', JSON.stringify(updatedLocalItems));
+      const updatedLocalItems = merged.map((item) => ({
+        product_id: item.product_id,
+        sku: item.sku,
+        quantity: item.quantity,
+      }));
+      localStorage.setItem("cartItems", JSON.stringify(updatedLocalItems));
 
       // Clear selection if items change significantly (optional, but safer)
       setSelectedItems([]);
-
     } catch (err) {
-      console.error('Error loading cart items:', err);
+      console.error("Error loading cart items:", err);
       // Potentially clear local cart if fetch fails badly?
       // localStorage.removeItem('cartItems');
       setCartItems([]);
@@ -123,96 +141,118 @@ export function CartDialog() {
 
   const handleCheckout = () => {
     // Filter cart items to only include selected ones based on composite key
-    const selectedProducts = cartItems.filter(item =>
+    const selectedProducts = cartItems.filter((item) =>
       selectedItems.includes(`${item.product_id}-${item.sku}`)
     );
 
     if (selectedProducts.length === 0) {
-        // Maybe show a toast message?
-        console.log("No items selected for checkout.");
-        return;
+      // Maybe show a toast message?
+      console.log("No items selected for checkout.");
+      return;
     }
 
     // Store selected items (full details) in localStorage for checkout page
-    localStorage.setItem('checkoutItems', JSON.stringify(selectedProducts));
-    
+    localStorage.setItem("checkoutItems", JSON.stringify(selectedProducts));
+
     // Store a flag indicating if this is a guest checkout
     if (!currentUser) {
-      localStorage.setItem('isGuestCheckout', 'true');
+      localStorage.setItem("isGuestCheckout", "true");
     } else {
-      localStorage.removeItem('isGuestCheckout');
+      localStorage.removeItem("isGuestCheckout");
     }
 
     // Option 2: Keep cart intact, just clear selection (current approach)
     setSelectedItems([]);
 
     setOpen(false);
-    navigate('/checkout');
+    navigate("/checkout");
   };
 
   // Use composite key "product_id-sku" for selection
   const toggleItemSelection = (productId: string, sku: string) => {
     const compositeKey = `${productId}-${sku}`;
-    setSelectedItems(prev => {
+    setSelectedItems((prev) => {
       if (prev.includes(compositeKey)) {
-        return prev.filter(key => key !== compositeKey);
+        return prev.filter((key) => key !== compositeKey);
       } else {
         return [...prev, compositeKey];
       }
     });
   };
 
-  const handleQuantityChange = (productId: string, sku: string, newQuantity: number) => {
+  const handleQuantityChange = (
+    productId: string,
+    sku: string,
+    newQuantity: number
+  ) => {
     let updatedCartItems: CartItem[] = [];
     const clampedQuantity = Math.max(1, newQuantity); // Ensure quantity is at least 1
 
-    setCartItems(currentItems => {
-        updatedCartItems = currentItems.map(item => {
-            if (item.product_id === productId && item.sku === sku) {
-                // Clamp quantity based on stock
-                const finalQuantity = Math.min(clampedQuantity, item.stock);
-                return { ...item, quantity: finalQuantity };
-            }
-            return item;
-        });
-        return updatedCartItems;
+    setCartItems((currentItems) => {
+      updatedCartItems = currentItems.map((item) => {
+        if (item.product_id === productId && item.sku === sku) {
+          // Clamp quantity based on stock
+          const finalQuantity = Math.min(clampedQuantity, item.stock);
+          return { ...item, quantity: finalQuantity };
+        }
+        return item;
+      });
+      return updatedCartItems;
     });
 
     // Update localStorage stored quantities
-    const stored = localStorage.getItem('cartItems');
-    const storedArr: Array<{ product_id: string; sku: string; quantity: number }> = stored ? JSON.parse(stored) : [];
-    const synced = storedArr.map(i => {
+    const stored = localStorage.getItem("cartItems");
+    const storedArr: Array<{
+      product_id: string;
+      sku: string;
+      quantity: number;
+    }> = stored ? JSON.parse(stored) : [];
+    const synced = storedArr
+      .map((i) => {
         if (i.product_id === productId && i.sku === sku) {
-            const itemInCart = updatedCartItems.find(u => u.product_id === productId && u.sku === sku);
-            // Use the stock from the fetched cart item for clamping
-            const stock = itemInCart ? itemInCart.stock : 0;
-            return { ...i, quantity: Math.min(clampedQuantity, stock) };
+          const itemInCart = updatedCartItems.find(
+            (u) => u.product_id === productId && u.sku === sku
+          );
+          // Use the stock from the fetched cart item for clamping
+          const stock = itemInCart ? itemInCart.stock : 0;
+          return { ...i, quantity: Math.min(clampedQuantity, stock) };
         }
         return i;
-    }).filter(i => i.quantity > 0); // Also filter here if quantity becomes 0
-    localStorage.setItem('cartItems', JSON.stringify(synced));
+      })
+      .filter((i) => i.quantity > 0); // Also filter here if quantity becomes 0
+    localStorage.setItem("cartItems", JSON.stringify(synced));
   };
 
   const handleRemoveItem = (productId: string, sku: string) => {
     const compositeKey = `${productId}-${sku}`;
     // Update cartItems state
-    const updatedCart = cartItems.filter(item => !(item.product_id === productId && item.sku === sku));
+    const updatedCart = cartItems.filter(
+      (item) => !(item.product_id === productId && item.sku === sku)
+    );
     setCartItems(updatedCart);
 
     // Update selection state
-    setSelectedItems(prev => prev.filter(key => key !== compositeKey));
+    setSelectedItems((prev) => prev.filter((key) => key !== compositeKey));
 
     // Update localStorage
-    const stored = localStorage.getItem('cartItems');
-    const storedArr: Array<{ product_id: string; sku: string; quantity: number }> = stored ? JSON.parse(stored) : [];
-    const updatedStoredArr = storedArr.filter(item => !(item.product_id === productId && item.sku === sku));
-    localStorage.setItem('cartItems', JSON.stringify(updatedStoredArr));
+    const stored = localStorage.getItem("cartItems");
+    const storedArr: Array<{
+      product_id: string;
+      sku: string;
+      quantity: number;
+    }> = stored ? JSON.parse(stored) : [];
+    const updatedStoredArr = storedArr.filter(
+      (item) => !(item.product_id === productId && item.sku === sku)
+    );
+    localStorage.setItem("cartItems", JSON.stringify(updatedStoredArr));
   };
 
   const getTotal = () => {
     return cartItems
-      .filter(item => selectedItems.includes(`${item.product_id}-${item.sku}`))
-      .reduce((sum, item) => sum + (item.store_price * item.quantity), 0);
+      .filter((item) =>
+        selectedItems.includes(`${item.product_id}-${item.sku}`)
+      )
+      .reduce((sum, item) => sum + item.store_price * item.quantity, 0);
   };
 
   // Composite key for React lists
@@ -241,12 +281,79 @@ export function CartDialog() {
             Review your cart items before proceeding to create an invoice.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="flex-1 overflow-x-auto">
           {loading ? (
-            <div className="flex justify-center items-center h-40">
-              Loading cart items...
-            </div>
+            <>
+              {/* Desktop Skeleton Loader */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[50px]"></TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
+                      <TableHead className="w-[100px]">Image</TableHead>
+                      <TableHead className="max-w-[150px] sm:max-w-[180px]">Product</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Array(3).fill(0).map((_, index) => (
+                      <TableRow key={`skeleton-row-${index}`}>
+                        <TableCell><Skeleton className="h-8 w-8 rounded-full" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-5 rounded" /></TableCell>
+                        <TableCell><Skeleton className="w-[100px] h-[100px]" /></TableCell>
+                        <TableCell>
+                          <Skeleton className="h-5 w-32 mb-2" />
+                          <Skeleton className="h-4 w-24" />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-center">
+                            <Skeleton className="h-8 w-24 rounded" />
+                          </div>
+                          <Skeleton className="h-4 w-16 mt-1 mx-auto" />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Skeleton className="h-5 w-20 ml-auto" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-right">
+                        <Skeleton className="h-6 w-16 ml-auto" />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Skeleton className="h-6 w-24 ml-auto" />
+                      </TableCell>
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              </div>
+              
+              {/* Mobile Skeleton Loader */}
+              <div className="md:hidden space-y-3 overflow-y-auto max-h-[60vh]">
+                {Array(3).fill(0).map((_, index) => (
+                  <div key={`mobile-skeleton-${index}`} className="relative bg-card rounded-lg shadow p-4 border flex flex-col gap-3">
+                    <div className="flex items-start gap-3">
+                      <Skeleton className="h-5 w-5 rounded" />
+                      <Skeleton className="w-[60px] h-[60px] rounded" />
+                      <div className="flex-1 min-h-[60px] flex flex-col justify-between">
+                        <div>
+                          <Skeleton className="h-5 w-32 mb-2" />
+                          <Skeleton className="h-4 w-24" />
+                        </div>
+                        <Skeleton className="h-6 w-6 rounded-full self-end" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-10 w-full rounded" />
+                    <Skeleton className="h-10 w-full rounded" />
+                  </div>
+                ))}
+              </div>
+            </>
           ) : cartItems.length === 0 ? (
             <div className="flex justify-center items-center h-40">
               Your cart is empty
@@ -258,10 +365,14 @@ export function CartDialog() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[50px]"></TableHead> {/* Remove */}
-                      <TableHead className="w-[50px]"></TableHead> {/* Select */}
+                      <TableHead className="w-[50px]"></TableHead>{" "}
+                      {/* Remove */}
+                      <TableHead className="w-[50px]"></TableHead>{" "}
+                      {/* Select */}
                       <TableHead className="w-[100px]">Image</TableHead>
-                      <TableHead className="max-w-[150px] sm:max-w-[180px]">Product</TableHead>
+                      <TableHead className="max-w-[150px] sm:max-w-[180px]">
+                        Product
+                      </TableHead>
                       <TableHead>Quantity</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                     </TableRow>
@@ -271,13 +382,18 @@ export function CartDialog() {
                       <TableRow
                         key={getItemKey(item)} // Use composite key
                         className="align-middle cursor-pointer"
-                        onClick={() => toggleItemSelection(item.product_id, item.sku)} // Use composite key
+                        onClick={() =>
+                          toggleItemSelection(item.product_id, item.sku)
+                        } // Use composite key
                       >
                         <TableCell>
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={(e) => { e.stopPropagation(); handleRemoveItem(item.product_id, item.sku); }} // Use composite key
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveItem(item.product_id, item.sku);
+                            }} // Use composite key
                             className="h-8 w-8 p-0"
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
@@ -285,25 +401,30 @@ export function CartDialog() {
                         </TableCell>
                         <TableCell
                           className="align-middle hover:cursor-pointer"
-                          onClick={(e) => { e.stopPropagation(); toggleItemSelection(item.product_id, item.sku); }} // Use composite key
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleItemSelection(item.product_id, item.sku);
+                          }} // Use composite key
                         >
                           <Checkbox
                             checked={selectedItems.includes(getItemKey(item))} // Use composite key
-                            onCheckedChange={() => toggleItemSelection(item.product_id, item.sku)} // Use composite key
+                            onCheckedChange={() => {
+                              // Use onCheckedChange without referencing event, just call toggleItemSelection directly
+                              toggleItemSelection(item.product_id, item.sku);
+                            }}
                             className="cursor-pointer"
+                            onClick={(e) => e.stopPropagation()} // Add stopPropagation to onClick instead
                           />
                         </TableCell>
                         <TableCell>
                           <img
                             src={item.image_url || "https://placehold.co/100"}
-                            alt={item.product_name + (item.variant_name ? ` - ${item.variant_name}` : '')}
+                            alt={item.product_name + (item.variant_name ? ` - ${item.variant_name}` : "")}
                             className="w-[100px] h-[100px] object-cover"
                           />
                         </TableCell>
                         <TableCell className="font-medium max-w-[150px] sm:max-w-[180px] py-4">
-                          <span className="block">
-                            {item.product_name}
-                          </span>
+                          <span className="block">{item.product_name}</span>
                           {/* Display Variant Name or SKU */}
                           {(item.variant_name || item.sku) && (
                             <span className="block text-sm text-muted-foreground">
@@ -311,16 +432,34 @@ export function CartDialog() {
                             </span>
                           )}
                         </TableCell>
-                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-center gap-2" onClick={(e: React.MouseEvent<HTMLElement>) => e.stopPropagation()}> {/* Centered */}
+                        <TableCell
+                          className="text-center"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div
+                            className="flex items-center justify-center gap-2"
+                            onClick={(e: React.MouseEvent<HTMLElement>) =>
+                              e.stopPropagation()
+                            }
+                          >
+                            {" "}
+                            {/* Centered */}
                             <QuantityInput
                               value={item.quantity}
-                              onChange={(newValue) => handleQuantityChange(item.product_id, item.sku, newValue)} // Use composite key
+                              onChange={(newValue) =>
+                                handleQuantityChange(
+                                  item.product_id,
+                                  item.sku,
+                                  newValue
+                                )
+                              } // Use composite key
                               min={1}
                               max={item.stock}
                             />
                           </div>
-                           <span className="text-xs text-muted-foreground block mt-1">Stock: {item.stock}</span>
+                          <span className="text-xs text-muted-foreground block mt-1">
+                            Stock: {item.stock}
+                          </span>
                         </TableCell>
                         <TableCell className="text-right">
                           ₱{(item.store_price * item.quantity).toLocaleString()}
@@ -330,7 +469,9 @@ export function CartDialog() {
                   </TableBody>
                   <TableFooter>
                     <TableRow>
-                      <TableCell colSpan={5} className="text-right font-bold">Total</TableCell>
+                      <TableCell colSpan={5} className="text-right font-bold">
+                        Total
+                      </TableCell>
                       <TableCell className="text-right font-bold">
                         ₱{getTotal().toLocaleString()}
                       </TableCell>
@@ -345,17 +486,23 @@ export function CartDialog() {
                   <div
                     key={getItemKey(item)} // Use composite key
                     className="relative bg-card rounded-lg shadow p-4 border flex flex-col gap-3 cursor-pointer"
-                    onClick={() => toggleItemSelection(item.product_id, item.sku)} // Use composite key
+                    onClick={() =>
+                      toggleItemSelection(item.product_id, item.sku)
+                    } // Use composite key
                   >
                     <div className="flex items-start gap-3">
                       <Checkbox
                         checked={selectedItems.includes(getItemKey(item))} // Use composite key
-                        onCheckedChange={() => toggleItemSelection(item.product_id, item.sku)} // Use composite key
-                        className="mt-1"
+                        onCheckedChange={() => {
+                          // Use onCheckedChange without referencing event, just call toggleItemSelection directly
+                          toggleItemSelection(item.product_id, item.sku);
+                        }}
+                        className="cursor-pointer"
+                        onClick={(e) => e.stopPropagation()} // Add stopPropagation to onClick instead
                       />
                       <img
                         src={item.image_url || "https://placehold.co/60"}
-                        alt={item.product_name + (item.variant_name ? ` - ${item.variant_name}` : '')}
+                        alt={item.product_name + (item.variant_name ? ` - ${item.variant_name}` : "")}
                         className="w-[60px] h-[60px] object-cover rounded"
                       />
                       <div className="flex-1 min-h-[60px] flex flex-col justify-between">
@@ -363,8 +510,8 @@ export function CartDialog() {
                           <span className="font-medium line-clamp-2">
                             {item.product_name}
                           </span>
-                           {/* Display Variant Name or SKU */}
-                           {(item.variant_name || item.sku) && (
+                          {/* Display Variant Name or SKU */}
+                          {(item.variant_name || item.sku) && (
                             <span className="block text-sm text-muted-foreground">
                               {item.variant_name || `SKU: ${item.sku}`}
                             </span>
@@ -373,7 +520,10 @@ export function CartDialog() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={(e) => { e.stopPropagation(); handleRemoveItem(item.product_id, item.sku); }} // Use composite key
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveItem(item.product_id, item.sku);
+                          }} // Use composite key
                           className="h-6 w-6 p-0 self-end"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -383,23 +533,37 @@ export function CartDialog() {
 
                     <div
                       className="flex items-center justify-between px-2 py-1 bg-muted/30 rounded"
-                      onClick={(e: React.MouseEvent<HTMLElement>) => e.stopPropagation()}
+                      onClick={(e: React.MouseEvent<HTMLElement>) =>
+                        e.stopPropagation()
+                      }
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Quantity:</span>
+                        <span className="text-sm text-muted-foreground">
+                          Quantity:
+                        </span>
                         <QuantityInput
                           value={item.quantity}
-                          onChange={(newValue) => handleQuantityChange(item.product_id, item.sku, newValue)} // Use composite key
+                          onChange={(newValue) =>
+                            handleQuantityChange(
+                              item.product_id,
+                              item.sku,
+                              newValue
+                            )
+                          } // Use composite key
                           min={1}
                           max={item.stock}
                         />
                       </div>
-                       <span className="text-xs text-muted-foreground">Stock: {item.stock}</span>
+                      <span className="text-xs text-muted-foreground">
+                        Stock: {item.stock}
+                      </span>
                     </div>
 
                     <div className="flex items-center px-2 py-1 bg-muted/30 rounded">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Amount:</span>
+                        <span className="text-sm text-muted-foreground">
+                          Amount:
+                        </span>
                         <span className="font-medium">
                           ₱{(item.store_price * item.quantity).toLocaleString()}
                         </span>
@@ -424,15 +588,15 @@ export function CartDialog() {
         </div>
 
         <DialogFooter className="mt-4">
-          <Button 
-            type="button" 
-            onClick={handleCheckout} 
+          <Button
+            type="button"
+            onClick={handleCheckout}
             className="w-full md:w-auto"
             disabled={cartItems.length === 0 || selectedItems.length === 0}
           >
             Proceed to Checkout
           </Button>
-        </DialogFooter>        
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

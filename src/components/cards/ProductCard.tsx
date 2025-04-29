@@ -29,6 +29,8 @@ function ProductCard({ product }: ProductCardProps) {
   
   const handleViewDetails = (e: React.MouseEvent) => {
     e.stopPropagation();
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Add smooth scroll to top
+    
     navigate(`/product?id=${product.product_id}`);
   };
 
