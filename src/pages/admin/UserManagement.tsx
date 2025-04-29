@@ -515,7 +515,7 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
       password: "",
       first_name: "",
       last_name: "",
-      role: "customer",
+      role: "warehouse",
     },
   })
 
@@ -649,7 +649,7 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="accountant">Accountant</SelectItem>
                   <SelectItem value="warehouse">Warehouse Manager</SelectItem>
-                  <SelectItem value="customer">Customer</SelectItem>
+                  
                 </SelectContent>
               </Select>
               <FormMessage />
