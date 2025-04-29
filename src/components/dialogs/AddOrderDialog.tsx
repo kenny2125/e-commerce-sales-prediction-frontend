@@ -36,15 +36,20 @@ import { useUser } from "@/contexts/UserContext";
 
 // Define interfaces
 interface Product {
-  product_id: string;
+  variant_id: string; // ID of the product variant
+  product_id: string; // ID of the parent product
   product_name: string;
+  sku: string; // SKU of the variant
+  variant_name: string;
   store_price: number;
   quantity: number; // For stock availability
 }
 
 interface OrderItem {
-  product_id: string;
+  product_id: string; // This will now be the variant_id
   product_name: string;
+  sku: string; // SKU for tracking
+  variant_name: string;
   quantity: number;
   price_at_time: number;
 }
@@ -58,6 +63,7 @@ interface AddOrderDialogProps {
 export function AddOrderDialog({ open, onOpenChange, onOrderAdded }: AddOrderDialogProps) {
   // Order form state
   const [customerName, setCustomerName] = useState('');
+  const [companyName, setCompanyName] = useState(''); // Add business/company name
   const [address, setAddress] = useState('');
   // Initialize Philippine mobile prefix (+639)
   const [contactNumber, setContactNumber] = useState('+639');
@@ -100,6 +106,9 @@ export function AddOrderDialog({ open, onOpenChange, onOrderAdded }: AddOrderDia
         if (!/^[A-Za-z\s]+$/.test(value)) return 'Name should contain only letters and spaces';
         if (value.length > 100) return 'Name cannot exceed 100 characters';
         return '';
+      case 'companyName':
+        if (value.length > 100) return 'Company name cannot exceed 100 characters';
+        return '';
       case 'address':
         if (!value.trim()) return 'Address is required';
         if (value.length > 255) return 'Address cannot exceed 255 characters';
@@ -115,18 +124,18 @@ export function AddOrderDialog({ open, onOpenChange, onOrderAdded }: AddOrderDia
     }
   };
 
-  const handleBlur = (field: 'customerName' | 'address' | 'contactNumber') => {
+  const handleBlur = (field: 'customerName' | 'address' | 'contactNumber' | 'companyName') => {
     setTouched(prev => ({ ...prev, [field]: true }));
-    const value = field === 'customerName' ? customerName : field === 'address' ? address : contactNumber;
+    const value = field === 'customerName' ? customerName : field === 'address' ? address : field === 'contactNumber' ? contactNumber : companyName;
     const err = validateField(field, value);
     setErrors(prev => ({ ...prev, [field]: err }));
   };
 
   const hasFormErrors = () => {
-    const customerFields: Array<'customerName' | 'address' | 'contactNumber'> = ['customerName', 'address', 'contactNumber'];
+    const customerFields: Array<'customerName' | 'address' | 'contactNumber' | 'companyName'> = ['customerName', 'address', 'contactNumber', 'companyName'];
     const newErrors: Record<string, string> = {};
     customerFields.forEach(field => {
-      const value = field === 'customerName' ? customerName : field === 'address' ? address : contactNumber;
+      const value = field === 'customerName' ? customerName : field === 'address' ? address : field === 'contactNumber' ? contactNumber : companyName;
       const err = validateField(field, value);
       if (err) newErrors[field] = err;
     });
@@ -169,8 +178,7 @@ export function AddOrderDialog({ open, onOpenChange, onOrderAdded }: AddOrderDia
     
     setIsSearching(true);
     try {
-      // Removed token requirement for testing purposes
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/product/search?query=${encodeURIComponent(searchTerm)}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/product/variant-search?query=${encodeURIComponent(searchTerm)}`, {
         headers: {
           'Content-Type': 'application/json',
         }
@@ -181,16 +189,7 @@ export function AddOrderDialog({ open, onOpenChange, onOrderAdded }: AddOrderDia
       }
       
       const data = await response.json();
-      
-      // Map the response to match our Product interface
-      const formattedResults = data.map((product: any) => ({
-        product_id: product.product_id,
-        product_name: product.product_name,
-        store_price: product.store_price,
-        quantity: product.quantity
-      }));
-      
-      setSearchResults(formattedResults);
+      setSearchResults(data);
       setIsProductDialogOpen(true);
     } catch (error) {
       console.error('Error searching products:', error);
@@ -214,8 +213,11 @@ export function AddOrderDialog({ open, onOpenChange, onOrderAdded }: AddOrderDia
       return;
     }
     
-    // Check if product already exists in order
-    const existingItemIndex = items.findIndex(item => item.product_id === selectedProduct.product_id);
+    // Check if product variant already exists in order using variant_id and SKU
+    const existingItemIndex = items.findIndex(item => 
+      item.product_id === selectedProduct.variant_id && 
+      item.sku === selectedProduct.sku
+    );
     
     if (existingItemIndex >= 0) {
       // Update existing item
@@ -230,12 +232,14 @@ export function AddOrderDialog({ open, onOpenChange, onOrderAdded }: AddOrderDia
       updatedItems[existingItemIndex].quantity = newQuantity;
       setItems(updatedItems);
     } else {
-      // Add new item
+      // Add new item with variant information
       setItems([
         ...items,
         {
-          product_id: selectedProduct.product_id,
+          product_id: selectedProduct.variant_id,
           product_name: selectedProduct.product_name,
+          sku: selectedProduct.sku,
+          variant_name: selectedProduct.variant_name,
           quantity: productQuantity,
           price_at_time: selectedProduct.store_price
         }
@@ -278,17 +282,18 @@ export function AddOrderDialog({ open, onOpenChange, onOrderAdded }: AddOrderDia
 
       // Format the order data
       const orderData = {
-        user_id: currentUser?.id,
         payment_method: paymentMethod,
         pickup_method: pickupMethod,
         purpose: notes,
         items: items.map(item => ({
           product_id: item.product_id,
+          sku: item.sku,
           quantity: item.quantity
         })),
-        // These fields would be used to update the user if needed
+        // Send customer info from the input fields
         customer_info: {
           name: customerName,
+          company_name: companyName,
           address,
           phone: contactNumber
         }
@@ -315,6 +320,7 @@ export function AddOrderDialog({ open, onOpenChange, onOrderAdded }: AddOrderDia
       
       // Reset form
       setCustomerName('');
+      setCompanyName('');
       setAddress('');
       setContactNumber('+639');
       setNotes('');
@@ -356,6 +362,20 @@ export function AddOrderDialog({ open, onOpenChange, onOrderAdded }: AddOrderDia
                         />
                         {errors.customerName && touched.customerName && (
                           <p className="text-xs text-red-500">{errors.customerName}</p>
+                        )}
+                      </div>
+
+                      <div className="grid w-full items-center gap-1.5">
+                        <Label htmlFor="companyName">Business/Company Name</Label>
+                        <Input 
+                          id="companyName" 
+                          value={companyName}
+                          onChange={(e) => setCompanyName(e.target.value)}
+                          onBlur={() => handleBlur('companyName')}
+                          placeholder="Enter business or company name (optional)"
+                        />
+                        {errors.companyName && touched.companyName && (
+                          <p className="text-xs text-red-500">{errors.companyName}</p>
                         )}
                       </div>
                       
@@ -482,7 +502,15 @@ export function AddOrderDialog({ open, onOpenChange, onOrderAdded }: AddOrderDia
                           const lineTotal = item.quantity * item.price_at_time;
                           return (
                             <TableRow key={item.product_id}>
-                              <TableCell className="font-medium">{item.product_name}</TableCell>
+                              <TableCell className="font-medium">
+                                {item.product_name}
+                                <span className="block text-sm text-muted-foreground">
+                                  {item.variant_name}
+                                </span>
+                                <span className="block text-xs text-muted-foreground">
+                                  SKU: {item.sku}
+                                </span>
+                              </TableCell>
                               <TableCell className="text-right">{item.quantity}</TableCell>
                               <TableCell className="text-right">{formatCurrency(item.price_at_time)}</TableCell>
                               <TableCell className="text-right">{formatCurrency(lineTotal)}</TableCell>
@@ -534,7 +562,7 @@ export function AddOrderDialog({ open, onOpenChange, onOrderAdded }: AddOrderDia
       {/* Product search results dialog */}
       <CommandDialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
         <CommandInput 
-          placeholder="Search products..." 
+          placeholder="Search products or SKUs..." 
           value={searchTerm}
           onValueChange={setSearchTerm}
         />
@@ -543,14 +571,19 @@ export function AddOrderDialog({ open, onOpenChange, onOrderAdded }: AddOrderDia
           <CommandGroup heading="Products">
             {searchResults.map((product) => (
               <CommandItem
-                key={product.product_id}
+                key={product.variant_id}
                 onSelect={() => {
                   setSelectedProduct(product);
                   setIsProductDialogOpen(false);
                 }}
               >
                 <div className="flex justify-between items-center w-full">
-                  <span>{product.product_name}</span>
+                  <div className="flex flex-col">
+                    <span>{product.product_name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {product.variant_name} - SKU: {product.sku}
+                    </span>
+                  </div>
                   <span className="text-sm text-muted-foreground">
                     {formatCurrency(product.store_price)} • {product.quantity} in stock
                   </span>

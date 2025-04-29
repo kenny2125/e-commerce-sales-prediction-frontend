@@ -66,6 +66,8 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
   const [showDiscountForm, setShowDiscountForm] = useState(false);
   const [isEditingDiscount, setIsEditingDiscount] = useState(false);
   const [previewTotalAfterDiscount, setPreviewTotalAfterDiscount] = useState(order.totalAmount || 0);
+  const [deletingOrder, setDeletingOrder] = useState(false);
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const printContentRef = useRef<HTMLDivElement>(null);
 
   // Format payment method from database values to user-friendly text
@@ -450,6 +452,36 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
     setShowDiscountForm(true);
   };
 
+  const handleDeleteOrder = async () => {
+    setDeletingOrder(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${order.orderID}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete order');
+      }
+
+      toast.success('Order deleted successfully');
+      onOpenChange(false); // Close the dialog after deletion
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete order');
+    } finally {
+      setDeletingOrder(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 gap-0 max-w-[98vw] min-w-[1200px] h-[90vh]">
@@ -726,10 +758,44 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
               <Printer size={16} />
               Print Order
             </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteAlert(true)}
+              className="flex items-center gap-2 text-red-500 hover:text-red-600"
+            >
+              <Trash size={16} />
+              Delete Order
+            </Button>
             <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
           </DialogFooter>
         </div>
       </DialogContent>
+
+      {/* Alert Dialog for Deletion */}
+      {showDeleteAlert && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded shadow-md w-96">
+            <h2 className="text-lg font-bold mb-4">Delete Order</h2>
+            <p className="text-sm text-gray-600 mb-6">Are you sure you want to delete this order? This action cannot be undone.</p>
+            <div className="flex justify-end gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowDeleteAlert(false)}
+                disabled={deletingOrder}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleDeleteOrder}
+                disabled={deletingOrder}
+              >
+                {deletingOrder ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Dialog>
   );
 }
