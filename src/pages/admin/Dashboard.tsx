@@ -36,11 +36,19 @@ interface StockLevel {
   status?: string; 
 }
 
+// Add new interface for date range
+interface DateRange {
+  earliest: string | null;
+  latest: string | null;
+}
+
 export default function Dashboard() {
   const [ongoingOrders, setOngoingOrders] = useState(0);
   const [recentSales, setRecentSales] = useState<RecentSale[]>([]);
   const [stockLevels, setStockLevels] = useState<StockLevel[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
+  // Add new state for date range
+  const [revenueRange, setRevenueRange] = useState<DateRange>({ earliest: null, latest: null });
   const [frequentItems, setFrequentItems] = useState<
     Array<{
       product_id: string;
@@ -64,11 +72,30 @@ export default function Dashboard() {
     const fetchTotalRevenue = async () => {
       setLoadingRevenue(true);
       try {
-        const response = await fetch(
+        // Fetch total revenue
+        const revenueResponse = await fetch(
           `${import.meta.env.VITE_API_URL}/api/sales/total-revenue?source=historical`
         );
-        const data = await response.json();
-        setTotalRevenue(data.total_revenue);
+        const revenueData = await revenueResponse.json();
+        setTotalRevenue(revenueData.total_revenue);
+        
+        // Fetch historical data to get the date range
+        const historicalResponse = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/sales/historical`
+        );
+        const historicalData = await historicalResponse.json();
+        
+        if (historicalData && historicalData.length > 0) {
+          // Sort the data by date to ensure we get the correct earliest and latest
+          const sortedData = [...historicalData].sort((a, b) => 
+            new Date(a.date).getTime() - new Date(b.date).getTime()
+          );
+          
+          setRevenueRange({
+            earliest: sortedData[0]?.date || null,
+            latest: sortedData[sortedData.length - 1]?.date || null
+          });
+        }
       } catch (error) {
         console.error("Error fetching total revenue:", error);
       } finally {
@@ -224,8 +251,21 @@ export default function Dashboard() {
                 <PhilippinePeso className="h-8 w-8 text-primary" />
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex flex-col items-center">
               <p className="text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
+              {revenueRange.earliest && revenueRange.latest && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  {new Date(revenueRange.earliest).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })} - {new Date(revenueRange.latest).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </p>
+              )}
             </CardFooter>
           </Card>
         )}
@@ -243,7 +283,7 @@ export default function Dashboard() {
               </div>
             </CardContent>
             <CardFooter>
-              <p className="text-2xl font-bold">{ongoingOrders} Orders Today</p>
+              <p className="text-2xl font-bold">{ongoingOrders} Orders</p>
             </CardFooter>
           </Card>
         )}
@@ -291,7 +331,7 @@ export default function Dashboard() {
                 <div className="space-y-2 pr-4">
                   {frequentItems.slice(0, 5).map((item) => (
                     <div
-                      key={item.product_id}
+                      key={`${item.product_id}-${item.variant_id}`}
                       className="flex flex-col pb-2 border-b"
                     >
                       <div className="flex items-center justify-between">
@@ -302,9 +342,9 @@ export default function Dashboard() {
                           {item.sold_count}
                         </span>
                       </div>
-                      {item.variant_name && (
+                      {item.product_original_name && (
                         <span className="text-xs text-muted-foreground">
-                          {item.variant_name}
+                          {item.product_original_name}
                         </span>
                       )}
                     </div>
@@ -364,6 +404,7 @@ export default function Dashboard() {
                         }`}>{item.status}</span>
                       </div>
                     ))}
+
                   </div>
                 )}
               </ScrollArea>

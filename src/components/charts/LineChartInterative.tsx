@@ -87,6 +87,16 @@ export function LineChartInteractive() {
     fetchSalesData();
   }, [fetchSalesData]);
 
+  // Preload date values based on chart data
+  React.useEffect(() => {
+    if (chartData.length > 0 && !startDate && !endDate) {
+      const firstDate = new Date(chartData[0].date);
+      const lastDate = new Date(chartData[chartData.length - 1].date);
+      setStartDate(firstDate);
+      setEndDate(lastDate);
+    }
+  }, [chartData, startDate, endDate]);
+
   const total = React.useMemo(
     () => ({
       actualsales: chartData.reduce((acc, curr) => acc + (curr.actualsales || 0), 0),
@@ -179,68 +189,76 @@ export function LineChartInteractive() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-col items-stretch space-y-4 border-b p-4 sm:p-6 sm:flex-row sm:space-y-0">
-        <div className="flex flex-1 flex-col justify-center gap-2">
-          <CardTitle>Sales Chart - Interactive</CardTitle>
-          <CardDescription>
-            {loading ? (
-              <Skeleton className="h-4 w-[250px]" />
-            ) : (
-              `Showing total of ${growthPercentage.toFixed(1)}% growth over period`
-            )}
-          </CardDescription>
-          <div className="flex flex-col sm:flex-row gap-2 mt-2">
-            <div className="flex flex-wrap gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full sm:w-[150px] justify-start text-left font-normal",
-                      !startDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, "PPP") : "Start date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={setStartDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full sm:w-[150px] justify-start text-left font-normal",
-                      !endDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, "PPP") : "End date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={setEndDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+      <CardHeader className="flex flex-col items-stretch space-y-4 border-b p-4 sm:p-6">
+        <div className="flex flex-col md:flex-row justify-between gap-4">
+          <div className="flex flex-1 flex-col justify-center">
+            <CardTitle className="text-xl">Sales Chart - Interactive</CardTitle>
+            <CardDescription>
+              {loading ? (
+                <Skeleton className="h-4 w-[250px]" />
+              ) : (
+                `Showing total of ${growthPercentage.toFixed(1)}% growth over period`
+              )}
+            </CardDescription>
+          </div>
+          
+          <div className="flex flex-wrap md:flex-nowrap gap-2 items-center">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-[140px] justify-start text-left font-normal",
+                    !startDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {startDate ? format(startDate, "PP") : "Start date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={setStartDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-[140px] justify-start text-left font-normal",
+                    !endDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {endDate ? format(endDate, "PP") : "End date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={endDate}
+                  onSelect={setEndDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
             <Button 
               variant="secondary"
               onClick={() => {
-                setStartDate(undefined);
-                setEndDate(undefined);
+                // Reset to the data range available in the dataset
+                if (chartData.length > 0) {
+                  const firstDate = new Date(chartData[0].date);
+                  const lastDate = new Date(chartData[chartData.length - 1].date);
+                  setStartDate(firstDate);
+                  setEndDate(lastDate);
+                  // Refetch data with full range
+                  fetchSalesData();
+                }
               }}
               className="whitespace-nowrap"
             >
@@ -248,24 +266,24 @@ export function LineChartInteractive() {
             </Button>
           </div>
         </div>
-        {/* Replace analytics section with expanded insights */}
+        
         {!loading && (
-          <div className="flex flex-wrap gap-4 pt-4 sm:pt-0">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 pt-2">
             {/* Average Daily Sales */}
             <div className="flex flex-col items-center bg-muted/30 p-3 rounded-md">
-              <span className="text-xs text-muted-foreground">Avg Monthly Sales</span>
+              <span className="text-xs text-muted-foreground">Avg Sales</span>
               <span className="text-lg font-bold">{averageDailySales.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
             </div>
             {/* Median Daily Sales */}
             <div className="flex flex-col items-center bg-muted/30 p-3 rounded-md">
-              <span className="text-xs text-muted-foreground">Median Monthly Sales</span>
+              <span className="text-xs text-muted-foreground">Median Sales</span>
               <span className="text-lg font-bold">{medianDailySales.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
             </div>
             {/* Peak Sales */}
             <div className="flex flex-col items-center bg-muted/30 p-3 rounded-md">
-              <span className="text-xs text-muted-foreground">Peak Monthly Sales</span>
+              <span className="text-xs text-muted-foreground">Peak Sales</span>
               <span className="text-lg font-bold">{peakSales.value.toLocaleString()}</span>
-              {peakSales.date && <span className="text-xs text-muted-foreground">on {peakSales.date}</span>}
+              {peakSales.date && <span className="text-xs text-muted-foreground">{peakSales.date}</span>}
             </div>
             {/* Total Sales */}
             <div className="flex flex-col items-center bg-muted/30 p-3 rounded-md">
@@ -276,18 +294,17 @@ export function LineChartInteractive() {
             <div className="flex flex-col items-center bg-muted/30 p-3 rounded-md">
               <span className="text-xs text-muted-foreground">Growth</span>
               <span className="text-lg font-bold">{growthPercentage.toFixed(1)}%</span>
-              {dateRange && <span className="text-xs text-muted-foreground">{dateRange}</span>}
+              <span className="text-xs text-muted-foreground">{dateRange}</span>
             </div>
             {/* Lowest Sales */}
             <div className="flex flex-col items-center bg-muted/30 p-3 rounded-md">
               <span className="text-xs text-muted-foreground">Lowest Sales</span>
               <span className="text-lg font-bold">{lowestSales.value.toLocaleString()}</span>
-              {lowestSales.date && <span className="text-xs text-muted-foreground">on {lowestSales.date}</span>}
+              <span className="text-xs text-muted-foreground">{lowestSales.date}</span>
             </div>
           </div>
         )}
       </CardHeader>
-      
       <CardContent className="p-2 sm:p-6">
         {loading ? (
           <div className="flex justify-center items-center h-[200px] sm:h-[250px]">
