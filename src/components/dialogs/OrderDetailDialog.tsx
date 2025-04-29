@@ -54,9 +54,12 @@ interface OrderDetailDialogProps {
   order: OrderDetail;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onDelete?: () => void; // Add callback for deletion
+  onUpdate?: () => void; // Add callback for updates (like discounts)
+  onStatusChange?: () => void; // Add callback for status changes
 }
 
-export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDialogProps) {
+export function OrderDetailDialog({ order, open, onOpenChange, onDelete, onUpdate, onStatusChange }: OrderDetailDialogProps) {
   const [updatingStatus, setUpdatingStatus] = React.useState(false);
   const [paymentStatus, setPaymentStatus] = React.useState(order.paymentStatus);
   const [pickupStatus, setPickupStatus] = React.useState(order.pickupStatus);
@@ -67,7 +70,6 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
   const [isEditingDiscount, setIsEditingDiscount] = useState(false);
   const [previewTotalAfterDiscount, setPreviewTotalAfterDiscount] = useState(order.totalAmount || 0);
   const [deletingOrder, setDeletingOrder] = useState(false);
-  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const printContentRef = useRef<HTMLDivElement>(null);
 
   // Format payment method from database values to user-friendly text
@@ -172,6 +174,7 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
       }
       
       toast.success(`Order ${field === 'paymentStatus' ? 'payment' : 'pickup'} status updated`);
+      if (onStatusChange) onStatusChange(); // Call the onStatusChange callback if provided
     } catch (error) {
       console.error('Error updating order status:', error);
       toast.error('Failed to update order status');
@@ -225,6 +228,7 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
       setIsEditingDiscount(false);
       
       toast.success(isEditingDiscount ? 'Discount updated successfully' : 'Discount applied successfully');
+      if (onUpdate) onUpdate(); // Call the onUpdate callback if provided
     } catch (error) {
       console.error('Error applying discount:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to apply discount');
@@ -453,6 +457,10 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
   };
 
   const handleDeleteOrder = async () => {
+    if (!window.confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
+      return;
+    }
+
     setDeletingOrder(true);
     try {
       const token = localStorage.getItem('token');
@@ -469,11 +477,16 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete order');
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 403) {
+          throw new Error('You do not have permission to delete this order');
+        }
+        throw new Error(errorData.message || 'Failed to delete order');
       }
 
       toast.success('Order deleted successfully');
       onOpenChange(false); // Close the dialog after deletion
+      if (onDelete) onDelete(); // Call the onDelete callback if provided
     } catch (error) {
       console.error('Error deleting order:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to delete order');
@@ -760,42 +773,17 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
             </Button>
             <Button 
               variant="outline" 
-              onClick={() => setShowDeleteAlert(true)}
+              onClick={handleDeleteOrder}
+              disabled={deletingOrder}
               className="flex items-center gap-2 text-red-500 hover:text-red-600"
             >
               <Trash size={16} />
-              Delete Order
+              {deletingOrder ? 'Deleting...' : 'Delete Order'}
             </Button>
             <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
           </DialogFooter>
         </div>
       </DialogContent>
-
-      {/* Alert Dialog for Deletion */}
-      {showDeleteAlert && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded shadow-md w-96">
-            <h2 className="text-lg font-bold mb-4">Delete Order</h2>
-            <p className="text-sm text-gray-600 mb-6">Are you sure you want to delete this order? This action cannot be undone.</p>
-            <div className="flex justify-end gap-4">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowDeleteAlert(false)}
-                disabled={deletingOrder}
-              >
-                Cancel
-              </Button>
-              <Button 
-                variant="destructive" 
-                onClick={handleDeleteOrder}
-                disabled={deletingOrder}
-              >
-                {deletingOrder ? 'Deleting...' : 'Delete'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </Dialog>
   );
 }

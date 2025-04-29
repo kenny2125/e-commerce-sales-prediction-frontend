@@ -177,24 +177,25 @@ export function Orders() {
   }, [])
 
   // Fetch analytics stats
-  React.useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const token = localStorage.getItem('token')
-        if (!token) throw new Error('No authentication token')
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/stats`, {
-          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-        })
-        if (!res.ok) throw new Error('Failed to fetch stats')
-        const data = await res.json()
-        setStats(data)
-      } catch (err) {
-        console.error(err)
-        setStatsError('Failed to fetch analytics')
-      } finally {
-        setStatsLoading(false)
-      }
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('No authentication token')
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/stats`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      })
+      if (!res.ok) throw new Error('Failed to fetch stats')
+      const data = await res.json()
+      setStats(data)
+    } catch (err) {
+      console.error(err)
+      setStatsError('Failed to fetch analytics')
+    } finally {
+      setStatsLoading(false)
     }
+  }
+
+  React.useEffect(() => {
     fetchStats()
   }, [])
 
@@ -217,6 +218,21 @@ export function Orders() {
     } finally {
       setDetailLoading(false);
     }
+  };
+
+  const handleOrderDeleted = () => {
+    fetchOrders(); // Refresh orders list
+    fetchStats(); // Refresh stats
+  };
+
+  const handleOrderUpdated = () => {
+    fetchOrders(); // Refresh orders list
+    fetchStats(); // Refresh stats
+  };
+
+  const handleStatusChanged = () => {
+    fetchOrders(); // Refresh orders list
+    fetchStats(); // Refresh stats
   };
 
   const columns: ColumnDef<Orders>[] = [
@@ -604,6 +620,9 @@ export function Orders() {
           order={selectedOrder}
           open={detailDialogOpen}
           onOpenChange={setDetailDialogOpen}
+          onDelete={handleOrderDeleted}
+          onUpdate={handleOrderUpdated}
+          onStatusChange={handleStatusChanged}
         />
       )}
     </div>
