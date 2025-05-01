@@ -258,6 +258,20 @@ export function CartDialog() {
   // Composite key for React lists
   const getItemKey = (item: CartItem) => `${item.product_id}-${item.sku}`;
 
+  // Select All Logic
+  const allItemKeys = cartItems.map(getItemKey);
+  const areAllSelected = cartItems.length > 0 && selectedItems.length === cartItems.length;
+  const areSomeSelected = selectedItems.length > 0 && selectedItems.length < cartItems.length;
+
+  // only receives boolean (full checked/un-checked)
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedItems(allItemKeys);
+    } else {
+      setSelectedItems([]);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -367,7 +381,15 @@ export function CartDialog() {
                     <TableRow>
                       <TableHead className="w-[50px]"></TableHead>{" "}
                       {/* Remove */}
-                      <TableHead className="w-[50px]"></TableHead>{" "}
+                      <TableHead className="w-[50px]">
+                        <Checkbox
+                          checked={areAllSelected}
+                          onCheckedChange={handleSelectAll}
+                          indeterminate={areSomeSelected}
+                          aria-label="Select all items"
+                          disabled={cartItems.length === 0}
+                        />
+                      </TableHead>{" "}
                       {/* Select */}
                       <TableHead className="w-[100px]">Image</TableHead>
                       <TableHead className="max-w-[150px] sm:max-w-[180px]">

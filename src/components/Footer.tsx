@@ -11,7 +11,7 @@ export default function Footer() {
           {/* Column 1 - Logo and Location */}
           <div className="flex flex-col">
             <div className="mb-6">
-              <Link to="/" aria-label="Home" className="inline-flex items-center gap-2">
+              <Link to="/" aria-label="Home" className="inline-flex items-center gap-2 cursor-pointer">
                 <img src={logoImage} alt="1618 Office Solutions Logo" className="w-10 h-10 object-contain" />
                 <span className="text-sm sm:text-base font-bold whitespace-normal sm:whitespace-nowrap">
                   1618 Office Solutions Inc.
@@ -64,7 +64,7 @@ export default function Footer() {
                 <Link 
                   to="/terms&conditions" 
                   onClick={() => window.scrollTo(0, 0)} 
-                  className="hover:underline hover:text-primary transition-colors inline-flex items-center"
+                  className="hover:underline hover:text-primary transition-colors inline-flex items-center cursor-pointer"
                 >
                   <span className="mr-2">›</span>
                   Terms & Conditions
@@ -74,7 +74,7 @@ export default function Footer() {
                 <Link 
                   to="/privacy-policy" 
                   onClick={() => window.scrollTo(0, 0)} 
-                  className="hover:underline hover:text-primary transition-colors inline-flex items-center"
+                  className="hover:underline hover:text-primary transition-colors inline-flex items-center cursor-pointer"
                 >
                   <span className="mr-2">›</span>
                   Privacy Policy

@@ -350,7 +350,7 @@ export default function Header() {
       ) : (
         <>
           {/* Desktop view (lg and up) */}
-          <div className="hidden lg:flex h-[8rem] items-center">
+          <div className="hidden lg:flex h-[6.5rem] items-center">
             <div>
               <Link to="/" aria-label="Home" className="flex items-center gap-2">
                 <img src={logoImage} alt="1618 Office Solutions Logo" className="w-10 h-10 object-contain" />
@@ -360,10 +360,11 @@ export default function Header() {
               </Link>
             </div>
             <div className="flex flex-1 justify-center">
-              <div className="flex w-[520px] h-[53px] items-center gap-2">
+              <div className="flex w-full max-w-2xl h-[53px] items-center gap-2 sticky top-0 bg-white z-10">
                 <Input 
                   type="text" 
                   placeholder="Search" 
+                  className="flex-grow" 
                   onKeyDown={handleSearchKeyPress}
                 />
                 <Button type="submit" onClick={productSearch}>
@@ -393,7 +394,7 @@ export default function Header() {
             <div className="flex justify-between items-center px-4 py-2">
               <Link to="/" aria-label="Home" className="flex items-center gap-2">
                 <img src={logoImage} alt="1618 Office Solutions Logo" className="w-8 h-8 object-contain" />
-                <span className="hidden xs:inline text-lg font-bold whitespace-nowrap">
+                <span className="xs:inline text-lg font-bold whitespace-nowrap">
                   1618 Office Solutions
                 </span>
               </Link>
@@ -418,7 +419,7 @@ export default function Header() {
             </div>
           </div>
           {/* Desktop categories row (visible on md and up) */}
-          <div className="hidden md:flex w-full border-b flex-nowrap gap-2 sm:gap-4 items-center justify-start  px-2 sm:px-0 scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
+          <div className="hidden md:flex w-full flex-nowrap gap-2 sm:gap-4 items-center justify-start  px-2 sm:px-0 scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
             <NavigationMenu>
               <NavigationMenuList className="flex flex-row flex-nowrap">
                 {categories.map((cat) => (
@@ -451,7 +452,7 @@ export default function Header() {
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-64 p-0">
-                  <div className="p-4 border-b font-semibold text-lg">Categories</div>
+                  <div className="p-4 font-semibold text-lg">Categories</div>
                   <NavigationMenu orientation="vertical">
                     <NavigationMenuList className="flex flex-col">
                       {categories.map((cat) => (

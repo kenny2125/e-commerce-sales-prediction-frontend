@@ -40,7 +40,7 @@ function Home() {
       </Helmet>
 
       {/* Hero Section with Overlay and Form */}
-      <section className="relative min-h-[700px] overflow-hidden px-12 rounded-2xl">
+      <section className="relative min-h-[700px] overflow-hidden px-12 rounded-2xl ">
         <div 
           className="absolute inset-0 bg-cover bg-center z-0"
           style={{ backgroundImage: `url(${heroImage})` }}
@@ -174,8 +174,8 @@ function Home() {
           </div>
             
           <div className="text-center mt-12">
-            <Button size="lg" id="send-invoice">
-              Start Your Order Now
+            <Button size="lg" id="send-invoice" asChild>
+              <Link to="/search">Start Your Order Now</Link>
             </Button>
           </div>
         </div>
@@ -235,9 +235,6 @@ function Home() {
               </div>
                 
               <div className="mt-8">
-                <Button asChild>
-                  <Link to="/contact">Contact Us <ArrowRight className="ml-2 h-4 w-4" /></Link>
-                </Button>
               </div>
             </div>
           </div>
@@ -315,19 +312,19 @@ function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
-                quote: "1618 Office Solutions transformed our workspace with high-quality furniture and supplies that improved our team's productivity and comfort.",
+                quote:`"1618 Office Solutions transformed our workspace with high-quality furniture and supplies that improved our team's productivity and comfort."`,
                 author: "Maria Santos",
                 position: "Operations Director",
                 company: "Manila Business Solutions"
               },
               {
-                quote: "As a school administrator, I've relied on 1618 for years. Their educational supplies are top-notch and their customer service is unmatched.",
+                quote: `"As a school administrator, I've relied on 1618 for years. Their educational supplies are top-notch and their customer service is unmatched."`,
                 author: "Jose Reyes",
                 position: "School Principal",
                 company: "St. Mark's Academy"
               },
               {
-                quote: "The quality of their bond paper and office supplies has been consistent for our small business. Their prices are fair and service is always reliable.",
+                quote: `"The quality of their bond paper and office supplies has been consistent for our small business. Their prices are fair and service is always reliable."`,
                 author: "Anna Lim",
                 position: "Business Owner",
                 company: "Lim Enterprises"
@@ -335,7 +332,7 @@ function Home() {
             ].map((item, i) => (
               <Card key={i} className="bg-muted/30 border-none">
                 <CardContent className="pt-6">
-                  <div className="text-4xl font-serif text-primary mb-4">"</div>
+                  
                   <p className="mb-6">{item.quote}</p>
                   <div>
                     <p className="font-bold">{item.author}</p>
