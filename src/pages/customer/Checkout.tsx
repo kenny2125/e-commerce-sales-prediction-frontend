@@ -91,6 +91,17 @@ const Checkout = () => {
     if (isLoggedIn && guestCheckout === 'true') {
       localStorage.removeItem('isGuestCheckout');
     }
+    
+    // Check for prefilled customer info from the QuickCheckoutForm
+    const prefilledInfo = localStorage.getItem('prefilled_customer_info');
+    if (prefilledInfo && guestCheckout === 'true') {
+      try {
+        const parsedInfo = JSON.parse(prefilledInfo);
+        setGuestInfo(parsedInfo);
+      } catch (error) {
+        console.error('Error parsing prefilled customer info:', error);
+      }
+    }
   }, [isLoggedIn]);
 
   useEffect(() => {
