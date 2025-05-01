@@ -33,7 +33,7 @@ const AppContent: React.FC = () => {
   const adminPaths = ["/dashboard", "/users", "/inventory", "/orders", "/sales"];
   const isAdminPage = adminPaths.some(path => location.pathname.startsWith(path));
   const isAdminLoginPage = location.pathname === "/admin";
-  const paddingClasses = isAdminPage ? "px-4" : "sm:px-[175px] md:px-[100px] lg:px-[200px]";
+  const paddingClasses = isAdminPage ? "px-4" : "sm:px-[10%] md:px-[8%] lg:px-[12%]";
 
   return (
     <HelmetProvider>

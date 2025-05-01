@@ -58,9 +58,9 @@ function Home() {
                 Premium office solutions tailored for businesses and educational institutions across the Philippines since 1989.
               </p>
               <div className="flex flex-wrap gap-4 md:hidden">
-                <Button size="lg" asChild>
+                <Button size="lg" asChild onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                   <Link to="/search">
-                    Explore Solutions <ArrowRight className="ml-2 h-4 w-4" />
+                    Explore Products <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20">
@@ -174,7 +174,7 @@ function Home() {
           </div>
             
           <div className="text-center mt-12">
-            <Button size="lg" id="send-invoice" asChild>
+            <Button size="lg" id="send-invoice" asChild onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
               <Link to="/search">Start Your Order Now</Link>
             </Button>
           </div>
