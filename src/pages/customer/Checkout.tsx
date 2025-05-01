@@ -91,6 +91,17 @@ const Checkout = () => {
     if (isLoggedIn && guestCheckout === 'true') {
       localStorage.removeItem('isGuestCheckout');
     }
+    
+    // Check for prefilled customer info from the QuickCheckoutForm
+    const prefilledInfo = localStorage.getItem('prefilled_customer_info');
+    if (prefilledInfo && guestCheckout === 'true') {
+      try {
+        const parsedInfo = JSON.parse(prefilledInfo);
+        setGuestInfo(parsedInfo);
+      } catch (error) {
+        console.error('Error parsing prefilled customer info:', error);
+      }
+    }
   }, [isLoggedIn]);
 
   useEffect(() => {
@@ -222,29 +233,23 @@ const Checkout = () => {
         });
       } else {
         // Regular checkout for logged-in users
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('No authentication token found');
-        }
 
-        // Create order through the API using the checkout endpoint
-        const orderData = {
-          payment_method: paymentMethod,
-          pickup_method: pickupMethod,
-          purpose, 
-          items: cartItems.map(item => ({
-            product_id: item.product_id,
-            sku: item.sku || '',
-            quantity: item.quantity
-          }))
-        };
+         // Create order through the API using the checkout endpoint
+         const orderData = {
+           payment_method: paymentMethod,
+           pickup_method: pickupMethod,
+           purpose, 
+           items: cartItems.map(item => ({
+             product_id: item.product_id,
+             sku: item.sku || '',
+             quantity: item.quantity
+           }))
+         };
 
         response = await fetch(`${import.meta.env.VITE_API_URL}/api/checkout`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(orderData)
         });
       }
