@@ -50,14 +50,14 @@ function Home() {
         <div className="relative z-20 container mx-auto h-full flex flex-col justify-center px-4 py-16 lg:py-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Hero Text Content */}
-            <div className="text-white max-w-xl">
-              <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-4">
+            <div className="text-white max-w-xl mx-auto text-center lg:text-left">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-4">
                 Transform Your <span className="text-primary">Workspace</span>
               </h1>
-              <p className="text-xl mb-8 text-gray-200">
+              <p className="text-base sm:text-lg md:text-xl mb-8 text-gray-200">
                 Premium office solutions tailored for businesses and educational institutions across the Philippines since 1989.
               </p>
-              <div className="flex flex-wrap gap-4 md:hidden">
+              <div className="flex flex-wrap gap-4">
                 <Button size="lg" asChild onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                   <Link to="/search">
                     Explore Products <ArrowRight className="ml-2 h-4 w-4" />
@@ -70,7 +70,7 @@ function Home() {
             </div>
             
             {/* Quick Checkout Form */}
-            <div className="lg:ml-auto w-full max-w-md">
+            <div className="w-full max-w-md mx-auto lg:ml-auto lg:mr-0">
               <QuickCheckoutForm className="backdrop-blur" />
             </div>
           </div>
