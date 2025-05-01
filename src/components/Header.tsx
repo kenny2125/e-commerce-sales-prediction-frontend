@@ -360,7 +360,7 @@ export default function Header() {
               </Link>
             </div>
             <div className="flex flex-1 justify-center">
-              <div className="flex w-full max-w-2xl h-[53px] items-center gap-2 sticky top-0 bg-white z-10">
+              <div className="flex w-full max-w-2xl h-[53px] items-center gap-2 sticky top-0 z-10">
                 <Input 
                   type="text" 
                   placeholder="Search" 

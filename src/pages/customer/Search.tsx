@@ -41,7 +41,7 @@ export default function Search() {
   const [searchInput, setSearchInput] = useState(searchParams.get("query") || "");
 
   // Add viewMode state for toggling between card and table views
-  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('table');
   const [productsWithVariants, setProductsWithVariants] = useState<any[]>([]);
 
   const handlePriceChange = useCallback((value: number) => {
@@ -416,13 +416,13 @@ export default function Search() {
 
       {/* Mobile View with Tabs */}
       <div className="md:hidden">
-        <Tabs defaultValue="results" className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'filters' | 'results')} className="w-full">
           <TabsList>
-            <TabsTrigger value="filters" onClick={() => setActiveTab("filters")}>
+            <TabsTrigger value="filters">
               <LayoutGrid className="mr-2 h-4 w-4" />
               Filters
             </TabsTrigger>
-            <TabsTrigger value="results" onClick={() => setActiveTab("results")}>
+            <TabsTrigger value="results">
               <List className="mr-2 h-4 w-4" />
               Results
             </TabsTrigger>
@@ -460,23 +460,63 @@ export default function Search() {
                     </form>
                   )}
                 </div>
+                {/* View mode toggle for mobile */}
+                <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'card' | 'table')} className="mb-4">
+                  <TabsList className="flex w-full justify-center">
+                    <TabsTrigger value="card" className="flex-1">
+                      <LayoutGrid className="mr-2 h-4 w-4" />
+                      Cards
+                    </TabsTrigger>
+                    <TabsTrigger value="table" className="flex-1">
+                      <List className="mr-2 h-4 w-4" />
+                      Table
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
                 {loading ? (
                   <div className="flex justify-center items-center min-h-[200px]">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
-                      {paginatedProducts.length === 0 ? (
-                        <div className="text-center py-8 col-span-full">
-                          <p className="text-lg text-gray-500">No products found matching your criteria</p>
-                        </div>
-                      ) : (
-                        paginatedProducts.map((product) => (
-                          <ProductCard key={product.product_id} product={product} />
-                        ))
-                      )}
-                    </div>
+                    {viewMode === 'card' ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        {paginatedProducts.length === 0 ? (
+                          <div className="text-center py-8 col-span-full">
+                            <p className="text-lg text-gray-500">No products found matching your criteria</p>
+                          </div>
+                        ) : (
+                          paginatedProducts.map((product) => (
+                            <ProductCard key={product.product_id} product={product} />
+                          ))
+                        )}
+                      </div>
+                    ) : (
+                      <div className="rounded-md border">
+                        <table className="w-full caption-bottom text-sm">
+                          <thead className="[&_tr]:border-b">
+                            <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                              <th className="h-12 px-4 text-left align-middle font-medium">Product Name</th>
+                              <th className="h-12 px-4 text-left align-middle font-medium">Price</th>
+                              <th className="h-12 px-4 text-left align-middle font-medium">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="[&_tr:last-child]:border-0">
+                            {paginatedProducts.map((product) => (
+                              <tr key={product.product_id} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                <td className="p-4 align-middle font-medium">{product.product_name}</td>
+                                <td className="p-4 align-middle">₱{product.store_price.toLocaleString()}</td>
+                                <td className="p-4 align-middle">
+                                  <Button variant="outline" size="sm" onClick={() => navigate(`/product?id=${product.product_id}`)}>
+                                    View More
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                     <Pagination />
                   </>
                 )}

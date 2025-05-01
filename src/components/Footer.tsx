@@ -4,7 +4,7 @@ import logoImage from "../assets/logo.webp";
 
 export default function Footer() {
   return (
-    <footer className="w-full py-12 mt-16 bg-muted/10">
+    <footer className="w-full py-12 mt-16 ">
       <div className="container mx-auto px-4">
         {/* Main footer grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
