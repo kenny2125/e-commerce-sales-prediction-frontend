@@ -18,7 +18,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
   }
   
   if (!isLoggedIn || !currentUser) {
-    return <Navigate to="/unauthorized" replace />;
+    // Not logged in -> return to home
+    return <Navigate to="/" replace />;
   }
   
   // Special check for users management route - only SUPER_ADMIN can access

@@ -37,7 +37,7 @@ export function ProfileDialog() {
 
   const handleLogout = () => {
     logout();
-    navigate('');
+    navigate('/');
   };
 
   // Function to render role-specific capabilities
