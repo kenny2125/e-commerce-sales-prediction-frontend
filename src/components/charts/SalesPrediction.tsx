@@ -81,6 +81,7 @@ export function SalesPrediction() {
   const [forceTraining, setForceTraining] = useState(false);
   const [savedModels, setSavedModels] = useState<any[]>([]);
   const [modelInfo, setModelInfo] = useState<any>(null);
+  const [viewTab, setViewTab] = useState<'chart'|'details'>('chart');
   
   // Additional data from enhanced prediction endpoint
   const [rawData, setRawData] = useState<any[]>([]);
@@ -436,30 +437,7 @@ export function SalesPrediction() {
                   className="px-2 py-1 border rounded w-full md:w-16 h-9"
                 />
               </label>
-              {/* Max Points input hidden
-              <label className="flex flex-col md:flex-row md:items-center gap-1 text-sm">
-                <span>Max Points:</span>
-                <input
-                  type="number"
-                  min="12"
-                  max="100"
-                  value={maxDataPoints}
-                  onChange={(e) => setMaxDataPoints(parseInt(e.target.value))}
-                  className="px-2 py-1 border rounded w-full md:w-16 h-9"
-                />
-              </label>
-              */}
             </div>
-            {/* Force Retraining switch hidden
-            <div className="flex items-center space-x-2 mr-2">
-              <Switch 
-                id="force-training" 
-                checked={forceTraining}
-                onCheckedChange={setForceTraining}
-              />
-              <Label htmlFor="force-training" className="text-sm">Force Retraining</Label>
-            </div>
-            */}
             <Button 
               onClick={predictFutureSales} 
               disabled={isLoading || isPredicting}
@@ -520,120 +498,149 @@ export function SalesPrediction() {
           </Alert>
         )}
 
-        {isLoading ? (
-          <div className="h-[350px] md:h-[500px]">
-            {/* Skeleton loader for chart */}
-            <div className="flex flex-col h-full">
-              {/* Y-axis labels skeletons */}
-              <div className="flex items-center h-full">
-                <div className="flex flex-col justify-between h-full py-6">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Skeleton key={i} className="h-4 w-12 my-1" />
-                  ))}
-                </div>
-                
-                {/* Chart area skeleton */}
-                <div className="flex-1 h-full p-4">
-                  {/* Chart grid lines */}
-                  <div className="grid grid-cols-1 gap-8 h-full">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Skeleton key={i} className="h-0.5 w-full" />
-                    ))}
-                  </div>
-                  
-                  {/* Chart bars overlaid */}
-                  <div className="grid grid-cols-12 gap-2 h-[200px] mt-[-220px]">
-                    {Array.from({ length: 12 }).map((_, i) => (
-                      <div key={i} className="flex flex-col justify-end h-full">
-                        <Skeleton className={`w-full h-[${Math.floor(Math.random() * 150) + 50}px]`} style={{ height: `${Math.floor(Math.random() * 150) + 50}px` }} />
+        {/* Internal view tabs for chart vs details */}
+        <Tabs value={viewTab} onValueChange={setViewTab} className="w-full">
+          <TabsList>
+            <TabsTrigger value="chart">Chart View</TabsTrigger>
+            <TabsTrigger value="details">Details</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="chart">
+            {/* Chart or loading/error state */}
+            {isLoading ? (
+              <div className="h-[350px] md:h-[500px]">
+                {/* Skeleton loader for chart */}
+                <div className="flex flex-col h-full">
+                  <div className="flex items-center h-full">
+                    <div className="flex flex-col justify-between h-full py-6">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <Skeleton key={i} className="h-4 w-12 my-1" />
+                      ))}
+                    </div>
+                    <div className="flex-1 h-full p-4">
+                      <div className="grid grid-cols-1 gap-8 h-full">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <Skeleton key={i} className="h-0.5 w-full" />
+                        ))}
                       </div>
+                      <div className="grid grid-cols-12 gap-2 h-[200px] mt-[-220px]">
+                        {Array.from({ length: 12 }).map((_, i) => (
+                          <div key={i} className="flex flex-col justify-end h-full">
+                            <Skeleton className={`w-full h-[${Math.floor(Math.random() * 150) + 50}px]`} style={{ height: `${Math.floor(Math.random() * 150) + 50}px` }} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between mt-4 px-16">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                      <Skeleton key={i} className="h-4 w-16" />
                     ))}
                   </div>
                 </div>
               </div>
-              
-              {/* X-axis labels skeletons */}
-              <div className="flex justify-between mt-4 px-16">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Skeleton key={i} className="h-4 w-16" />
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : error ? (
-          <div className="flex justify-center items-center h-[350px] md:h-[500px]">{error}</div>
-        ) : (
-          <div className="h-[300px] md:h-[550px]">
-            <ChartContainer config={chartConfig}>
-              <AreaChart
-                accessibilityLayer
-                data={chartData}
-                margin={{
-                  top: 10,
-                  right: isMobile ? 10 : 30,
-                  left: isMobile ? 5 : 10,
-                  bottom: isMobile ? 60 : 30,
-                }}
-                stackOffset="none"
-              >
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  tickLine={true}
-                  axisLine={true}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                  interval={2}
-                  tick={{ fontSize: isMobile ? 10 : 12 }}
-                />
-                <YAxis 
-                  tickLine={false}
-                  axisLine={true}
-                  tickFormatter={(value) => `₱${value.toLocaleString()}`}
-                  width={isMobile ? 50 : 60}
-                  tick={{ fontSize: isMobile ? 10 : 12 }}
-                />
-                <ChartTooltip
-                  cursor={false}
-                  content={
-                    <ChartTooltipContent 
-                      formatter={(value: any) => 
-                        value ? `₱${Number(value).toLocaleString()}` : 'N/A'
+            ) : error ? (
+              <div className="flex justify-center items-center h-[350px] md:h-[500px]">{error}</div>
+            ) : (
+              <div className="h-[250px] sm:h-[300px] md:h-[550px]">
+                <ChartContainer config={chartConfig}>
+                  <AreaChart
+                    accessibilityLayer
+                    data={chartData}
+                    margin={{
+                      top: 10,
+                      right: isMobile ? 10 : 30,
+                      left: isMobile ? 5 : 10,
+                      bottom: isMobile ? 60 : 30,
+                    }}
+                    stackOffset="none"
+                  >
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="month"
+                      tickLine={true}
+                      axisLine={true}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      interval={2}
+                      tick={{ fontSize: isMobile ? 10 : 12 }}
+                    />
+                    <YAxis 
+                      tickLine={false}
+                      axisLine={true}
+                      tickFormatter={(value) =>
+                        value >= 1000000
+                          ? `₱${(value / 1000000).toFixed(1)}M`
+                          : `₱${value.toLocaleString()}`
+                      }
+                      width={isMobile ? 50 : 60}
+                      tick={{ fontSize: isMobile ? 10 : 12 }}
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      content={
+                        <ChartTooltipContent 
+                          formatter={(value: any) => 
+                            value ? `₱${Number(value).toLocaleString()}` : 'N/A'
+                          }
+                        />
                       }
                     />
-                  }
-                />
-                <Area
-                  dataKey="total_sales"
-                  type="monotone"
-                  name="total_sales"
-                  fill="var(--color-total_sales)"
-                  fillOpacity={0.6}
-                  stroke="var(--color-total_sales)"
-                  strokeWidth={2}
-                  connectNulls
-                />
-                <Area
-                  dataKey="predicted_sales"
-                  type="monotone"
-                  name="predicted_sales"
-                  fill="var(--color-predicted_sales)"
-                  fillOpacity={0.5}
-                  stroke="var(--color-predicted_sales)"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  connectNulls
-                />
-              </AreaChart>
-            </ChartContainer>
-          </div>
-        )}
-        
-        {/* Prediction Results Tables */}
-        {predictionData.length > 0 && (
-          <>
-            {/* Overlapping Months Comparison */}
+                    <Area
+                      dataKey="total_sales"
+                      type="monotone"
+                      name="total_sales"
+                      fill="var(--color-total_sales)"
+                      fillOpacity={0.6}
+                      stroke="var(--color-total_sales)"
+                      strokeWidth={2}
+                      connectNulls
+                    />
+                    <Area
+                      dataKey="predicted_sales"
+                      type="monotone"
+                      name="predicted_sales"
+                      fill="var(--color-predicted_sales)"
+                      fillOpacity={0.5}
+                      stroke="var(--color-predicted_sales)"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      connectNulls
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </div>
+            )}
+
+            {/* Future Sales Predictions */}
+            {predictionData.length > 0 && (
+              <div className="mt-12 border rounded-md p-4">
+                <h3 className="font-medium mb-2">Future Sales Predictions</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2">Period</th>
+                        <th className="text-right py-2">Predicted Sales</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {predictionData.map((pred, index) => (
+                        <tr key={index} className="border-b last:border-0">
+                          <td className="py-2">{pred.month_name} {pred.year}</td>
+                          <td className="text-right py-2">₱{pred.predicted_sales.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="details">
+            {/* Actual vs Predicted Sales Comparison */}
             {getOverlappingMonths().length > 0 && (
               <div className="mt-12 border rounded-md p-4">
                 <h3 className="font-medium mb-2">Actual vs. Predicted Sales Comparison</h3>
@@ -673,112 +680,56 @@ export function SalesPrediction() {
               </div>
             )}
 
-            {/* Future Predictions */}
-            {/* <div className="mt-4 border rounded-md p-4">
-              <h3 className="font-medium mb-2">Future Sales Predictions</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2">Period</th>
-                      <th className="text-right py-2">Normalized Value</th>
-                      <th className="text-right py-2">Predicted Sales</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {predictionData.map((pred, index) => (
-                      <tr key={index} className="border-b last:border-0">
-                        <td className="py-2">{pred.month_name} {pred.year}</td>
-                        <td className="text-right py-2">
-                          {pred.normalized_prediction?.toFixed(6) || 'N/A'}
-                        </td>
-                        <td className="text-right py-2">₱{pred.predicted_sales.toLocaleString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div> */}
-          </>
-        )}
-        
-        {/* Normalization Parameters (if available) */}
-        {/* {normalizationParams && (
-          <div className="mt-4 border rounded-md p-4">
-            <h3 className="font-medium mb-2">Normalization Parameters</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm font-medium">Minimum Sales</p>
-                <p className="text-lg">₱{normalizationParams.min_sales.toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium">Maximum Sales</p>
-                <p className="text-lg">₱{normalizationParams.max_sales.toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium">Range</p>
-                <p className="text-lg">₱{normalizationParams.range.toLocaleString()}</p>
-              </div>
-            </div>
-          </div>
-        )} */}
-
-        {/* Model Information */}
-        {modelInfo && (
-          <div className="mt-4 border rounded-md p-4">
-            <h3 className="font-medium mb-2">Model Information</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium">Model Type</p>
-                <p className="text-base">{modelInfo.type || 'GRUTimeStep Neural Network'}</p>
-                
-                <p className="text-sm font-medium mt-2">Source</p>
-                <p className="text-base flex items-center">
-                  {modelInfo.source === 'loaded-from-file' ? (
-                    <>
-                      <span className="inline-block w-2 h-2 mr-2 rounded-full bg-green-500"></span>
-                      Loaded from saved model
-                    </>
-                  ) : (
-                    <>
-                      <span className="inline-block w-2 h-2 mr-2 rounded-full bg-blue-500"></span>
-                      Freshly trained
-                    </>
-                  )}
-                </p>
-                
-                {modelInfo.createdAt && (
-                  <>
-                    <p className="text-sm font-medium mt-2">Created At</p>
-                    <p className="text-base">
-                      {new Date(modelInfo.createdAt.replace(/-/g, ':')).toLocaleString()}
+            {/* Model Information */}
+            {modelInfo && (
+              <div className="mt-4 border rounded-md p-4">
+                <h3 className="font-medium mb-2">Model Information</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium">Model Type</p>
+                    <p className="text-base">{modelInfo.type || 'GRUTimeStep Neural Network'}</p>
+                    
+                    <p className="text-sm font-medium mt-2">Source</p>
+                    <p className="text-base flex items-center">
+                      {modelInfo.source === 'loaded-from-file' ? (
+                        <>
+                          <span className="inline-block w-2 h-2 mr-2 rounded-full bg-green-500"></span>
+                          Loaded from saved model
+                        </>
+                      ) : (
+                        <>
+                          <span className="inline-block w-2 h-2 mr-2 rounded-full bg-blue-500"></span>
+                          Freshly trained
+                        </>
+                      )}
                     </p>
-                  </>
-                )}
+                    
+                    {modelInfo.createdAt && (
+                      <>
+                        <p className="text-sm font-medium mt-2">Created At</p>
+                        <p className="text-base">
+                          {new Date(modelInfo.createdAt.replace(/-/g, ':')).toLocaleString()}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  
+                  <div>
+                    {modelInfo.lastSalesDate && (
+                      <>
+                        <p className="text-sm font-medium mt-2">Last Sales Date in Model</p>
+                        <p className="text-base">
+                          {new Date(modelInfo.lastSalesDate.year, modelInfo.lastSalesDate.month - 1, 1)
+                            .toLocaleDateString('default', { year: 'numeric', month: 'long' })}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
-              
-              <div>
-                {/* <p className="text-sm font-medium">Training Data Points</p>
-                <p className="text-base">{modelInfo.dataPoints || modelInfo.training_data_points || '-'}</p> */}
-                
-                {modelInfo.lastSalesDate && (
-                  <>
-                    <p className="text-sm font-medium mt-2">Last Sales Date in Model</p>
-                    <p className="text-base">
-                      {new Date(modelInfo.lastSalesDate.year, modelInfo.lastSalesDate.month - 1, 1)
-                        .toLocaleDateString('default', { year: 'numeric', month: 'long' })}
-                    </p>
-                  </>
-                )}
-                
-                {/* <p className="text-sm font-medium mt-2">Final Error</p>
-                <p className="text-base">
-                  {modelInfo.trainingParams?.finalError || modelInfo.final_error || '-'}
-                </p> */}
-              </div>
-            </div>
-          </div>
-        )}
+            )}
+          </TabsContent>
+        </Tabs>
       </CardContent>
       <CardFooter>
         <div className="flex w-full flex-col sm:flex-row items-start gap-2 text-sm pt-8">

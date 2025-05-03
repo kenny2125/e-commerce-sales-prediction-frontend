@@ -711,10 +711,13 @@ export function OrderDetailDialog({ order, open, onOpenChange, onDelete, onUpdat
                             <Label htmlFor="discount-amount" className="mb-1 block">Discount Amount (PHP)</Label>
                             <Input
                               id="discount-amount"
-                              type="number"
+                                type="text"
                               placeholder="0.00"
-                              value={discountAmount}
-                              onChange={(e) => setDiscountAmount(Number(e.target.value))}
+                              value={discountAmount ? discountAmount.toString() : ''}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/[^0-9.]/g, ''); // Remove non-numeric characters
+                                setDiscountAmount(value ? parseFloat(value) : 0);
+                              }}
                               min="0"
                               max={(order.originalAmount || order.totalAmount) || 9999999}
                               step="0.01"

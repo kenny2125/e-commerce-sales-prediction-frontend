@@ -11,7 +11,7 @@ import { LineChartInteractive } from "@/components/charts/LineChartInterative";
 import { PhilippinePeso, TableIcon, BarChart, LineChart, ShoppingCart, TrendingUp, Users, Calendar, Repeat } from "lucide-react";
 import { TopCategories } from "@/components/charts/TopCategories";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CustomerAcquisition } from "@/components/charts/CustomerAcquisition";
+import { RevenueTrend } from "@/components/charts/RevenueTrend";
 import { SalesPrediction } from "@/components/charts/SalesPrediction";
 import { SalesRecordsTable } from "@/components/admin/SalesRecordsTable";
 import { HistoricalSalesTable } from "@/components/admin/HistoricalSalesTable";
@@ -183,7 +183,7 @@ export default function Sales() {
           )}
 
           <div className="w-full">
-            <CustomerAcquisition/>
+            <RevenueTrend/>
           </div>
         </div>
 
