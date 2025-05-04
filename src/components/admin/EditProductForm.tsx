@@ -200,6 +200,47 @@ export function EditProductForm({ initialData, onSuccess, isLoading = false }: E
     setVariants(variants.filter(v => v.id !== variantId));
   };
   
+  // Handle deleting a variant's image from Cloudinary
+  const handleDeleteVariantImage = async (variantId: number) => {
+    try {
+      // Find the variant in the current state
+      const variant = variants.find(v => v.id === variantId);
+      if (!variant || !variant.image_url) {
+        toast.error("No image to delete");
+        return;
+      }
+      
+      // Send API request to delete image
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/product/variant-image/${variantId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Image deletion failed:", response.status, errorText);
+        toast.error("Failed to delete image");
+        return;
+      }
+      
+      // Update variant in state to remove image_url
+      setVariants(variants.map(v => {
+        if (v.id === variantId) {
+          return { ...v, image_url: null };
+        }
+        return v;
+      }));
+      
+      toast.success("Image deleted successfully");
+    } catch (error) {
+      console.error("Error deleting variant image:", error);
+      toast.error("Error deleting image");
+    }
+  };
+  
   // Function to handle variant form field changes
   const handleVariantChange = (field: keyof ProductVariant, value: any) => {
     if (!editingVariant) return;
@@ -815,6 +856,22 @@ export function EditProductForm({ initialData, onSuccess, isLoading = false }: E
                             <PencilIcon className="h-4 w-4" />
                             <span className="sr-only">Edit</span>
                           </Button>
+                          {variant.image_url && (
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7 text-amber-500"
+                              onClick={() => handleDeleteVariantImage(variant.id!)}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                                <path d="M14.5 4h-5L7 7H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-3l-2.5-3z"/>
+                                <path d="M14 14l-5.5 5.5"/>
+                                <path d="M8.5 14L14 19.5"/>
+                              </svg>
+                              <span className="sr-only">Delete Image</span>
+                            </Button>
+                          )}
                           <Button 
                             type="button" 
                             variant="ghost" 
@@ -829,8 +886,8 @@ export function EditProductForm({ initialData, onSuccess, isLoading = false }: E
                       </div>
                     </CardHeader>
                     <CardContent className="p-3 text-sm">
-                        {/* Variant Image */}
-                        <div className="mb-2 w-full h-32 flex items-center justify-center border rounded-md overflow-hidden bg-muted/30">
+                        {/* Variant Image with Delete Button */}
+                        <div className="mb-2 w-full h-32 flex flex-col items-center justify-center border rounded-md overflow-hidden bg-muted/30 relative">
                           <img
                             src={variant.image_url || ImagePlaceholder}
                             alt={variant.variant_name}
