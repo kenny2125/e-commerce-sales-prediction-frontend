@@ -103,7 +103,7 @@ export default function QuickCheckoutForm({ className = "" }: QuickCheckoutFormP
           </div>
           
           <Button type="submit" className="w-full">
-            Start Shopping <ArrowRight className="ml-2 h-4 w-4" />
+            Proceed to Products <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </form>
       </CardContent>
