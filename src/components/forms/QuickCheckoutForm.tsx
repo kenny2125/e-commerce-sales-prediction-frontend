@@ -43,7 +43,7 @@ export default function QuickCheckoutForm({ className = "" }: QuickCheckoutFormP
     <Card className={`shadow-lg ${className}`}>
       <CardContent className="p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <h3 className="text-xl font-bold mb-4">Quick Quote Request</h3>
+          <h3 className="text-xl font-bold mb-4">Personal Information</h3>
           
           <div className="space-y-3">
             <div>
