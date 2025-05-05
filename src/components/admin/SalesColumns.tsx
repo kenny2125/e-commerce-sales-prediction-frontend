@@ -58,13 +58,6 @@ export const salesColumns: ColumnDef<SalesRecord>[] = [
     },
   },
   {
-    accessorKey: "user_fullname",
-    header: "Customer",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("user_fullname") || "Unknown"}</div>
-    ),
-  },
-  {
     accessorKey: "payment_method",
     header: "Payment Method",
     cell: ({ row }) => (
@@ -77,34 +70,5 @@ export const salesColumns: ColumnDef<SalesRecord>[] = [
     cell: ({ row }) => (
       <div className="capitalize">{row.getValue("status")}</div>
     ),
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const sale = row.original
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(sale.order_number)}
-            >
-              Copy order number
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View Details</DropdownMenuItem>
-            <DropdownMenuItem>View Order</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
   },
 ]
