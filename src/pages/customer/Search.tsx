@@ -51,11 +51,19 @@ export default function Search() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchInput.trim()) {
-      setSearchParams({ query: searchInput.trim() });
+      setSearchParams(prev => {
+        const newParams = new URLSearchParams(prev);
+        newParams.set("query", searchInput.trim());
+        // If we're explicitly searching, clear any category filter
+        newParams.delete("category");
+        return newParams;
+      });
     } else {
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete("query");
-      setSearchParams(newParams);
+      setSearchParams(prev => {
+        const newParams = new URLSearchParams(prev);
+        newParams.delete("query");
+        return newParams;
+      });
     }
   };
 
@@ -74,6 +82,17 @@ export default function Search() {
 
     fetchCategories();
   }, []); // Only fetch categories once when component mounts
+
+  // Sync selected categories with URL parameter when component mounts or URL changes
+  useEffect(() => {
+    const categoryFromUrl = searchParams.get("category");
+    if (categoryFromUrl && availableCategories.includes(categoryFromUrl)) {
+      setSelectedCategories([categoryFromUrl]);
+    } else if (!categoryFromUrl) {
+      // Only reset if category parameter is not present
+      setSelectedCategories([]);
+    }
+  }, [searchParams, availableCategories]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -110,11 +129,26 @@ export default function Search() {
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategories(prev => {
+      let newCategories;
       if (prev.includes(category)) {
-        return prev.filter(c => c !== category);
+        newCategories = prev.filter(c => c !== category);
       } else {
-        return [...prev, category];
+        // For simplicity, only allow one category at a time now
+        newCategories = [category];
       }
+      
+      // Update URL with selected category
+      const newParams = new URLSearchParams(searchParams);
+      if (newCategories.length > 0) {
+        newParams.set("category", newCategories[0]);
+        // Clear query when setting a category
+        newParams.delete("query");
+      } else {
+        newParams.delete("category");
+      }
+      setSearchParams(newParams);
+      
+      return newCategories;
     });
   };
 
@@ -161,6 +195,16 @@ export default function Search() {
     currentPage * itemsPerPage
   );
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
+  // Get display text for results
+  const getResultsText = () => {
+    const query = searchParams.get("query");
+    const category = searchParams.get("category");
+    
+    if (query) return query;
+    if (category) return `Category: ${category}`;
+    return "All Products";
+  };
 
   // Pagination controls
   const Pagination = () => (
@@ -243,6 +287,9 @@ export default function Search() {
           setSortBy("");
           setPriceRange([maxPrice]);
           
+          // Clear URL parameters
+          setSearchParams({});
+          
           // Fetch all products when filters are reset
           setLoading(true);
           fetch(`${import.meta.env.VITE_API_URL}/api/product`)
@@ -252,11 +299,6 @@ export default function Search() {
             })
             .then(data => {
               setProducts(data);
-              // Reset the search parameters in the URL to remove any query or category filters
-              const params = new URLSearchParams(window.location.search);
-              if (params.has('query') || params.has('category')) {
-                window.history.pushState({}, '', window.location.pathname);
-              }
             })
             .catch(error => {
               console.error('Error fetching products:', error);
@@ -278,10 +320,13 @@ export default function Search() {
       const fetchProductsWithVariants = async () => {
         try {
           const query = searchParams.get("query");
+          const category = searchParams.get("category");
           let url = `${import.meta.env.VITE_API_URL}/api/product/detail`;
           
           if (query) {
             url += `?query=${encodeURIComponent(query)}`;
+          } else if (category) {
+            url += `?query=${encodeURIComponent(category)}`;
           }
           
           const response = await fetch(url);
@@ -308,7 +353,7 @@ export default function Search() {
           <div>
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <h1>
-                Results for: <span className="font-bold">{searchParams.get("query") || "All Products"}</span>
+                Results for: <span className="font-bold">{getResultsText()}</span>
               </h1>
               <div className="flex items-center gap-4">
                 {/* View Toggle */}
@@ -436,7 +481,7 @@ export default function Search() {
               <>
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                   <h1>
-                    Results for: <span className="font-bold">{searchParams.get("query") || "All Products"}</span>
+                    Results for: <span className="font-bold">{getResultsText()}</span>
                   </h1>
                   {isAdmin && (
                     <form onSubmit={handleSearch} className="flex w-full sm:w-auto mt-2 sm:mt-0">
