@@ -1,54 +1,82 @@
-# React + TypeScript + Vite
+# E-Commerce Website for 1618 Office Solutions
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Screenshot of the website](src/assets/preview.jpg)
 
-Currently, two official plugins are available:
+This is an **E-Commerce Website with Sales Prediction** using **GRU-Based Neural Networks** powered by [Brain.js](https://brain.js.org/). The platform enables customers to purchase office hardware, furniture, and supplies from **1618 Office Warehouse**, featuring secure checkout options.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## Expanding the ESLint configuration
+- User registration and login with role-based access (customer/admin)
+- Product catalog with advanced filters (category, brand, price, etc.)
+- Email notifications for order confirmation and updates using Nodemailer
+- Admin dashboard for product, customer, and order management
+- Real-time product availability
+- Sales and customer analytics with predictive insights using historical sales data
+- Bulk order support for office supplies
+- Wishlist functionality for saving preferred products
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Tech Stack
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- **Frontend**:
+  - React 19
+  - [Shadcn/UI](https://ui.shadcn.com) components for modern UI
+  - Tailwind CSS for styling
+  - React Router for navigation
+  - Recharts for data visualization
+- **Backend**:
+  - Node.js with Express.js
+  - GRU-based sales prediction using [Brain.js](https://brain.js.org/) for historical sales analysis and next-sequence forecasting
+  - RESTful API architecture
+  - Nodemailer for email notifications
+  - Heroku Postgres for database hosting
+  - Heroku Scheduler for automated tasks
+  - Cloudinary for image management
+- **Database**:
+  - PostgreSQL
+
+## Setup
+
+### Prerequisites
+
+- Node.js (v14 or higher)
+- npm
+- Backend server running (refer to the backend setup guide)
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd e-commerce-sales-prediction-frontend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Create a `.env` file in the root directory and configure the following environment variables:
+   ```bash
+   VITE_API_URL=youripaddress
+   ```
+
+4. Start the development server:
+   ```bash
+   npm start
+   ```
+
+5. Open your browser and navigate to `http://localhost:3000`.
+
+### Build for Production
+
+To build the project for production, run:
+```bash
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The production-ready files will be available in the `build/` directory.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Deployment
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+1. Deploy the `build/` directory to a static hosting service like Netlify, Vercel, or AWS S3.
+2. Ensure the backend API is accessible from the deployed frontend.
