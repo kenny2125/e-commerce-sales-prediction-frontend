@@ -80,3 +80,12 @@ The production-ready files will be available in the `build/` directory.
 
 1. Deploy the `build/` directory to a static hosting service like Netlify, Vercel, or AWS S3.
 2. Ensure the backend API is accessible from the deployed frontend.
+
+## Backend Repository
+
+The backend for this project is available at:  
+[https://github.com/kenny2125/e-commerce-sales-prediction-backend](https://github.com/kenny2125/e-commerce-sales-prediction-backend)
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
