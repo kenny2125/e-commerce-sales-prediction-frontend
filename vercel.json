@@ -3,6 +3,14 @@
          {
            "source": "/admin",
            "destination": "/admin"
+         },
+         {
+           "source": "/unauthorized",
+           "destination": "/"
+         },
+         {
+           "source": "/(.*)",
+           "destination": "/"
          }
        ]
      }
